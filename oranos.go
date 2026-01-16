@@ -10,7 +10,7 @@ import (
 
 func Oranos() {
 	var userinput int8
-	fmt.Println("Options : \n\t1.Plan \n\t2.apply \n\t3.destroy \n\t4.Exit")
+	fmt.Println("Options : \n\t1.Plan =>    showing all things and configs that you want to create \n\t2.apply =>   applying the changes and configs that you create to make VMs \n\t3.destroy => destroy all chagnes that you made like VMs or .. \n\t4.Exit =>    Exit from application")
 	fmt.Print("\nyour option :")
 	fmt.Scan(&userinput)
 
