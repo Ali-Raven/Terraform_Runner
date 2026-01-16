@@ -10,7 +10,7 @@ import (
 
 func Moon() {
 	var userinput int8
-	fmt.Println("Options : \n\t1.Plan =>    showing all things and configs that you want to create \n\t2.apply =>   applying the changes and configs that you create to make VMs \n\t3.destroy => destroy all chagnes that you made like VMs or .. \n\t4.Exit =>    Exit from application")
+	fmt.Println("Options : \n\t1.Plan =>    Show changes required by the current configuration \n\t2.apply =>   Create or update infrastructure \n\t3.destroy => Destroy previously-created infrastructure \n\t4.Exit")
 	fmt.Print("choise : ")
 	fmt.Scan(&userinput)
 
