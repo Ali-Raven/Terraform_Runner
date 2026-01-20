@@ -10,7 +10,9 @@ import (
 
 func Moon() {
 	var userinput int8
-	fmt.Println("Options : \n\t1.Plan =>    Show changes required by the current configuration \n\t2.apply =>   Create or update infrastructure \n\t3.destroy => Destroy previously-created infrastructure \n\t4.Exit")
+	fmt.Println("\nUsing Moon_starter ...")
+	time.Sleep(1 * time.Second)
+	fmt.Println("\nOptions : \n\t1.Plan =>    Show changes required by the current configuration \n\t2.apply =>   Create or update infrastructure \n\t3.destroy => Destroy previously-created infrastructure \n\t4.Exit")
 	fmt.Print("choise : ")
 	fmt.Scan(&userinput)
 
@@ -30,7 +32,7 @@ func Moon() {
 }
 
 func terraform_plan_moon() {
-	fmt.Print("command => terraform plan => executing ...\n\n")
+	fmt.Print("command ==> terraform plan ==> executing ...\n\n")
 	time.Sleep(2 * time.Second)
 	cmd := exec.Command("terraform", "plan")
 
@@ -45,7 +47,7 @@ func terraform_plan_moon() {
 	main()
 }
 func terraform_apply_moon() {
-	fmt.Print("command => terraform apply => executing ...\n\n")
+	fmt.Print("command ==> terraform apply ==> executing ...\n\n")
 	time.Sleep(2 * time.Second)
 	cmd := exec.Command("terraform", "apply" , "--auto-approve")
 
@@ -60,7 +62,7 @@ func terraform_apply_moon() {
 	main()
 }
 func terraform_destroy_moon() {
-	fmt.Print("command => terraform destroy => executing ...\n\n")
+	fmt.Print("command ==> terraform destroy ==> executing ...\n\n")
 	time.Sleep(2 * time.Second)
 	cmd := exec.Command("terraform", "destroy" , "--auto-approve")
 
