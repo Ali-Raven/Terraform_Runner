@@ -20,19 +20,17 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
-	// fmt.Println(os.Hostname())
-	// path
-	PATH := "~/home/" + hostname + "/Desktop/Workstation/terraform_project/final_terraform/"
+	
 	// var listNames = []string{"~/home/" , hostname , }
 	switch os.Args[1] {
 	case "--Nozaros_starter":
-		Nozaros(PATH)
+		Nozaros(hostname)
 		return
 	case "--Oranos_starter":
-		Oranos()
+		Oranos(hostname)
 		return
 	case "--Moon_starter":
-		Moon()
+		Moon(hostname)
 		return
 	default:
 		fmt.Println("\n choose one of commands ...")
