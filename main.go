@@ -24,13 +24,13 @@ func main() {
 	// var listNames = []string{"~/home/" , hostname , }
 	switch os.Args[1] {
 	case "--Nozaros_starter":
-		Nozaros(hostname)
+		Nozaros(hostname , "/final_terraform")
 		return
 	case "--Oranos_starter":
-		Oranos(hostname)
+		Oranos(hostname , "/vlan_terraform")
 		return
 	case "--Moon_starter":
-		Moon(hostname)
+		Moon(hostname , "/normal")
 		return
 	default:
 		fmt.Println("\n choose one of commands ...")
