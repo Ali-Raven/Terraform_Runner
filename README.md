@@ -11,6 +11,10 @@ Usage :
     ```sh
     git clone https://github.com/Ali-Raven/Terraform_Runner.git
     ```
+* **build** the executable file to use simply : 
+    ```sh
+    go build .
+    ```
 * going to the direcoty of your project and then **change the code with your idea :**
 
     ```sh
