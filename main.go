@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/TwiN/go-color"
 	"github.com/common-nighthawk/go-figure"
 )
 
@@ -33,7 +34,7 @@ func main() {
 		Moon(hostname , "/normal")
 		return
 	default:
-		fmt.Println("\n choose one of commands ...")
+		fmt.Println(color.Yellow + "\n choose one of commands ..." + color.Reset)
 		fmt.Println("\nUsage : \n\tgo run <file> command \n\t./terraform command \n\nthe commands are: \n\t--Nozaros_starter creating multiple VMs with diffrent ips \n\t--Oranos_starter  creating multiple VLANs \n\t--Moon_starter    creating normal VMs")
 	}
 }

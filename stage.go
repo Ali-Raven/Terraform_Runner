@@ -5,23 +5,25 @@ import (
 	"os"
 	"os/exec"
 	"time"
+
+	"github.com/TwiN/go-color"
 )
 
 func Oranos(hostname, wdir string) {
-	fmt.Println("\nUsing Oranos_starter")
-	fmt.Println("VLAN creating1 mode ...")
+	fmt.Println(color.Blue + "\nUsing Oranos_starter" + color.Reset)
+	fmt.Println(color.Yellow + "VLAN creating1 mode ..." + color.Reset)
 	MainStage(wdir)
 }
 
 func Moon(hostname, wdir string) {
-	fmt.Println("\nUsing Moon_starter")
-	fmt.Println("enabling normal mode ...")
+	fmt.Println(color.Blue + "\nUsing Moon_starter" + color.Reset)
+	fmt.Println(color.Yellow + "enabling normal mode ..." + color.Reset)
 	MainStage(wdir)
 }
 
 func Nozaros(hostname, wdir string) {
-	fmt.Println("\nUsing Nozaros_starter")
-	fmt.Println("multi_VM creating mode ...")
+	fmt.Println(color.Blue + "\nUsing Nozaros_starter" + color.Reset)
+	fmt.Println(color.Yellow + "multi_VM creating mode ..." + color.Reset)
 	MainStage(wdir)
 }
 
@@ -51,7 +53,7 @@ func MainStage(wdir string) {
 }
 
 func terraform_plan(mode *string, wdir string) {
-	fmt.Printf("command ==> terraform %v ==> executing ...\n\n", *mode)
+	fmt.Printf(color.Yellow + "command ==> terraform %v ==> executing ...\n\n" + color.Reset, *mode)
 	time.Sleep(2 * time.Second)
 	cmd := exec.Command("terraform", "plan")
 	// execute dst directory and getting current dir
@@ -65,9 +67,9 @@ func terraform_plan(mode *string, wdir string) {
 	cmd.Stderr = os.Stderr
 
 	if err := cmd.Run(); err != nil {
-		fmt.Printf("Error appeared during executing [terraform %v]\n", *mode)
+		fmt.Printf(color.Red + "Error appeared during executing [terraform %v]\n" + color.Reset, *mode)
 	} else {
-		fmt.Println("\nSuccessfully Executed.")
+		fmt.Println(color.Green + "\nSuccessfully Executed." + color.Reset)
 	}
 	main()
 }
@@ -83,7 +85,7 @@ func terraform_destroy(mode *string, wdir string) {
 }
 
 func baseCommand(com1, com2, com3 , wdir string, mode *string) {
-	fmt.Printf("command ==> terraform %v ==> executing ...\n\n", *mode)
+	fmt.Printf(color.Yellow + "command ==> terraform %v ==> executing ...\n\n" + color.Reset, *mode)
 	time.Sleep(2 * time.Second)
 	cmd := exec.Command(com1, com2, com3)
 
@@ -97,8 +99,8 @@ func baseCommand(com1, com2, com3 , wdir string, mode *string) {
 	cmd.Stderr = os.Stderr
 
 	if err := cmd.Run(); err != nil {
-		fmt.Printf("Error appeared during executing [terraform %v --auto-approve]\n", *mode)
+		fmt.Printf(color.Red + "Error appeared during executing [terraform %v --auto-approve]\n" + color.Reset, *mode)
 	} else {
-		fmt.Println("\nSuccessfully Executed.")
+		fmt.Println(color.Green + "\nSuccessfully Executed." + color.Reset)
 	}
 }
