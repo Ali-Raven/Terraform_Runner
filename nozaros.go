@@ -1,5 +1,5 @@
 package main
 
-func Nozaros_configure() {
+func Nozaros_configure(wdir string) {
 
 }

@@ -11,23 +11,23 @@ import (
 
 func Oranos(hostname, wdir string) {
 	fmt.Println(color.Blue + "\nUsing Oranos_starter" + color.Reset)
-	fmt.Println(color.Yellow + "VLAN creating1 mode ..." + color.Reset)
-	MainStage(wdir)
+	fmt.Println(color.Yellow + "VLAN creating mode ..." + color.Reset)
+	MainStage(wdir , 1)
 }
 
 func Moon(hostname, wdir string) {
 	fmt.Println(color.Blue + "\nUsing Moon_starter" + color.Reset)
 	fmt.Println(color.Yellow + "enabling normal mode ..." + color.Reset)
-	MainStage(wdir)
+	MainStage(wdir , 2)
 }
 
 func Nozaros(hostname, wdir string) {
 	fmt.Println(color.Blue + "\nUsing Nozaros_starter" + color.Reset)
 	fmt.Println(color.Yellow + "multi_VM creating mode ..." + color.Reset)
-	MainStage(wdir)
+	MainStage(wdir , 3)
 }
 
-func MainStage(wdir string) {
+func MainStage(wdir string , componentID int8) {
 	var userinput int8
 	time.Sleep(1 * time.Second)
 	fmt.Println("\nOptions : \n\t1.Enter Configuration =>    user configuration for VMs \n\t------------\t\n\t2.Plan =>    Show changes required by the current configuration \n\t------------\t\n\t3.apply =>   Create or update infrastructure \n\t------------\t\n\t4.destroy => Destroy previously-created infrastructure \n\t------------\t\n\t5.Exit")
@@ -36,7 +36,14 @@ func MainStage(wdir string) {
 	mode := "plan"
 	switch userinput {
 	case 1:
-		Moon_configure()
+		switch componentID  {
+			case 1:
+				Oranos_configure(wdir)
+			case 2:
+				Moon_configure(wdir)
+			case 3:
+				Nozaros_configure(wdir)
+		}
 		return
 	case 2:
 		terraform_plan(&mode, wdir)

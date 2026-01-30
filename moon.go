@@ -7,7 +7,7 @@ import (
 	"time"
 )
 
-func Moon_configure() {
+func Moon_configure(wdir string) {
 	var (
 		RAM int8
 		CPU int8
