@@ -3,7 +3,6 @@ package main
 import (
 	"fmt"
 	"os"
-
 	"github.com/TwiN/go-color"
 	"github.com/common-nighthawk/go-figure"
 )
