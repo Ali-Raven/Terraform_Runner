@@ -9,7 +9,7 @@ import (
 
 func main() {
 	// go-figure (art banner)
-	figure.NewColorFigure("DevOps", "", "cyan", true).Print()
+	figure.NewColorFigure("BBDH DevOps", "", "cyan", true).Print()
 	// go-figure (art banner)
 
 	if len(os.Args) < 2 {
