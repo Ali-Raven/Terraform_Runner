@@ -15,7 +15,7 @@ import (
 type Network struct {
 	Name    string `json:"name"`
 	IP      string `json:"ip"`
-	Netmask int `json:"netmask"`
+	Netmask int    `json:"netmask"`
 }
 
 type VM struct {
@@ -44,12 +44,22 @@ func Nozaros_configure(wdir string) {
 	case "1":
 		createNewVMs(reader, wdir)
 	case "2":
-
+		ModifyVMs(reader, wdir)
+	case "3":
+		DeleteVMs()
+	case "4":
+		fmt.Println("Exiting...")
+		time.Sleep(1 * time.Second)
+		return
+	default:
+		fmt.Println(color.Red + "Invalid option. Please try again." + color.Reset)
 	}
 	time.Sleep(1 * time.Second)
-	fmt.Printf("%s%s Updated Successfully %s\n", color.Green, "terraform.tfvars.json", color.Reset)
+	fmt.Printf("%s%s Updated Successfully. %s\n", color.Green, "terraform.tfvars.json", color.Reset)
+	Nozaros_configure(wdir)
 }
 
+// =========================================================================== Creating New VMs ==========================================================================
 func createNewVMs(reader *bufio.Reader, wdir string) {
 	for {
 		fmt.Println("Creating new VMs...")
@@ -67,32 +77,40 @@ func createNewVMs(reader *bufio.Reader, wdir string) {
 			vms = append(vms, vm)
 		}
 
-		data := TFvars{VMs: vms}
-		jsonBytes, _ := json.MarshalIndent(data, "", "  ")
-
-		fmt.Println(color.Green + "\n============ PREVIEW ============" + color.Reset)
-		fmt.Println(string(jsonBytes))
-		fmt.Println(color.Green + "==================================" + color.Reset)
-
-		choice := confirmMenu(reader)
-
-		if choice == "1" {
-			os.WriteFile("terraform.tfvars.json", jsonBytes, 0644)
+		retrunedPreview := preview(vms, reader)
+		if retrunedPreview == 0 {
 			return
 		}
-
-		if choice == "3" {
-			fmt.Println(color.Red + "Canceled ❌" + color.Reset)
-			fmt.Println("returning to the main menu ...")
-			time.Sleep(2 * time.Second)
-			main()
-		}
-
-		// choice == "2" → loop again (edit)
-		fmt.Println(color.Yellow + "\nRe-enter VM data...\n" + color.Reset)
 	}
 }
 
+func preview(vms []VM, reader *bufio.Reader) int {
+	data := TFvars{VMs: vms}
+	jsonBytes, _ := json.MarshalIndent(data, "", "  ")
+
+	fmt.Println(color.Green + "\n============ PREVIEW ============" + color.Reset)
+	fmt.Println(string(jsonBytes))
+	fmt.Println(color.Green + "==================================" + color.Reset)
+
+	choice := confirmMenu(reader)
+
+	switch choice {
+	case "1":
+		os.WriteFile("terraform.tfvars.json", jsonBytes, 0644)
+		return 0
+	case "2":
+		fmt.Println(color.Yellow + "\nRe-enter VM data...\n" + color.Reset)
+		vm := collectVM(reader)
+		vms = append(vms[:len(vms)-1], vm)
+		preview(vms, reader)
+	case "3":
+		fmt.Println(color.Red + "Canceled ❌" + color.Reset)
+		fmt.Println("returning to the main menu ...")
+		time.Sleep(2 * time.Second)
+		main()
+	}
+	return 0
+}
 func confirmMenu(reader *bufio.Reader) string {
 	for {
 		fmt.Println("\nOptions:")
@@ -123,7 +141,7 @@ func readRequired(reader *bufio.Reader, label string) string {
 			return value
 		}
 
-		fmt.Println("❌ This field is required.")
+		fmt.Println(color.Red + "This field is required." + color.Reset)
 	}
 }
 
@@ -159,6 +177,7 @@ func collectVM(reader *bufio.Reader) VM {
 	netCount := atoi(numNetworkStr)
 
 	for j := 0; j < netCount; j++ {
+		fmt.Printf(color.Yellow+"\n--- Network %d ---\n"+color.Reset, j+1)
 		n := readRequired(reader, "Network name: ")
 		ip := readRequired(reader, "Network IP: ")
 		netmask := readRequired(reader, "Network Netmask: ")
@@ -171,8 +190,186 @@ func collectVM(reader *bufio.Reader) VM {
 	}
 	return vm
 }
+
+// =========================================================================== Creating New VMs (END) ==========================================================================
+
+// =========================================================================== Helper Functions ==========================================================================
 // for simple string to int conversion
 func atoi(s string) int {
 	i, _ := strconv.Atoi(strings.TrimSpace(s))
 	return i
 }
+
+func readLine(reader *bufio.Reader) string {
+	s, _ := reader.ReadString('\n')
+	return strings.TrimSpace(s)
+}
+
+// =========================================================================== Helper Functions (END) ==========================================================================
+
+// =========================================================================== Modify VMs ==========================================================================
+func ModifyVMs(reader *bufio.Reader, wdir string) {
+	fmt.Println(color.Yellow + "\nfetching list of existings vms from terraform.tfvars.json ..." + color.Reset)
+	time.Sleep(1 * time.Second)
+
+	tfvars, err := loadTFvars()
+	if err != nil {
+		fmt.Println(color.Red + "Failed to load terraform.tfvars.json file" + color.Reset)
+		return
+	}
+
+	// fetching the list of existing vms
+	GettingVMsLists(tfvars)
+
+	fmt.Print("\nEnter the ID of the VM you want to modify : ")
+	vmID, _ := reader.ReadString('\n')
+	vmID = strings.TrimSpace(vmID)
+	vmIDindex := atoi(vmID) - 1
+
+	// checking VM index ID is valid or not
+	if vmIDindex < 0 || vmIDindex >= len(tfvars.VMs) {
+		fmt.Println(color.Red + "Invalid VM ID" + color.Reset)
+		return
+	}
+	// Further implementation to modify the VM with the given name
+	fmt.Printf("Modifying VM: %s (Functionality not yet implemented)\n", vmID)
+	time.Sleep(2 * time.Second)
+
+	tfvars.VMs[vmIDindex] = editVMs(reader, tfvars.VMs[vmIDindex])
+
+	saveNewTFvars(tfvars)
+}
+
+func editVMs(reader *bufio.Reader, vm VM) VM {
+	fmt.Println(color.Yellow + "\nPress ENTER to keep current value" + color.Reset)
+
+	vm.Name = readOptionalValue(reader, "VM Name : ", vm.Name)
+	vm.NumCPU = readOptionalINT(reader, "Number of CPU : ", vm.NumCPU)
+	vm.MemoryGB = readOptionalINT(reader, "Memory (GB): ", vm.MemoryGB)
+	vm.Gateway = readOptionalValue(reader, "Gateway : ", vm.Gateway)
+	vm.DNSservers = readDNSserversValue(reader, "DNS servers : ", vm.DNSservers)
+	vm.Networks = readNetworks(reader , vm.Networks)
+
+	return vm
+}
+func readNetworks(reader *bufio.Reader , network []Network) []Network {
+	// condition for checking the length of network array 
+	if len(network) == 0 {
+		fmt.Println(color.Yellow + "No Networks to edit" + color.Reset)
+		return network
+	}
+
+	fmt.Println(color.Yellow + "\nlisting Networks ..." + color.Reset)
+	time.Sleep(1 * time.Second)
+	for i , n := range network {
+		fmt.Printf("%d) Name : %s ,  IP ; (%s/%d)\n", i+1, n.Name, n.IP, n.Netmask)
+	}
+	
+	fmt.Println("\nEnter the network ID to edit : ")
+	id := atoi(readLine(reader)) - 1
+
+	if id < 0 || id >= len(network) {
+		fmt.Println("Invalid ID")
+		return network
+	}
+
+	network[id].Name = readOptionalValue(reader , "Network Name : " , network[id].Name)
+	network[id].IP = readOptionalValue(reader , "Network IP : " , network[id].IP)
+	network[id].Netmask = readOptionalINT(reader , "Network Netmask : " , network[id].Netmask)
+
+	return network
+}
+func readOptionalValue(reader *bufio.Reader, label, current string) string {
+	fmt.Printf("%s [current value => %s]: ", label, current)
+	userInput, _ := reader.ReadString('\n')
+	userInput = strings.TrimSpace(userInput)
+
+	if userInput == "" {
+		return current
+	}
+	return userInput
+}
+func readOptionalINT(reader *bufio.Reader, label string, current int) int {
+	fmt.Printf("%s [current value => %d]: ", label, current)
+	userInput, _ := reader.ReadString('\n')
+	userInput = strings.TrimSpace(userInput)
+
+	if userInput == "" {
+		return current
+	}
+	return atoi(userInput)
+}
+func readDNSserversValue(reader *bufio.Reader, label string, current []string) []string {
+	fmt.Printf("%s [current value => %s]: ", label, current)
+	userInput, _ := reader.ReadString('\n')
+	userInput = strings.TrimSpace(userInput)
+
+	if userInput == "" {
+		return current
+	}
+
+	dns := strings.Split(userInput, ",")
+	for i := range dns {
+		dns[i] = strings.TrimSpace(dns[i])
+	}
+
+	return dns
+}
+
+func saveNewTFvars(tfvars TFvars) {
+	data, _ := json.MarshalIndent(tfvars, "", " ")
+	os.WriteFile("terraform.tfvars.json", data, 0644)
+}
+
+func loadTFvars() (TFvars, error) {
+	data, err := os.ReadFile("terraform.tfvars.json")
+	if err != nil {
+		return TFvars{}, err
+	}
+
+	var tfvars TFvars
+	err = json.Unmarshal(data, &tfvars)
+	if err != nil {
+		fmt.Println(color.Red+"Error unmarshaling JSON:"+color.Reset, err)
+		return tfvars, err
+	}
+	return tfvars, err
+}
+func GettingVMsLists(tfvars TFvars) {
+
+	for i, vm := range tfvars.VMs {
+		printVMBox(vm, i)
+		fmt.Println(color.Green + "================================================" + color.Reset)
+	}
+}
+
+func printVMBox(vm VM, index int) {
+	fmt.Println("┌──────────────────────────────────────┐")
+	fmt.Printf("│ %sVM ID          : %-20d %s│\n", color.Yellow, index+1, color.Reset)
+	fmt.Printf("│ VM Name        : %-20s │\n", vm.Name)
+	fmt.Printf("│ CPUs           : %-20d │\n", vm.NumCPU)
+	fmt.Printf("│ Memory (GB)    : %-20d │\n", vm.MemoryGB)
+	fmt.Printf("│ Gateway        : %-20s │\n", vm.Gateway)
+	fmt.Printf("│ DNS Servers    : %-20s │\n", strings.Join(vm.DNSservers, ","))
+	fmt.Println("├──────────────────────────────────────┤")
+	fmt.Println("│ Networks                             │")
+	fmt.Println("├──────────────┬──────────────┬────────┤")
+	fmt.Println("│ Name         │ IP           │ Mask   │")
+	fmt.Println("├──────────────┼──────────────┼────────┤")
+
+	for _, n := range vm.Networks {
+		fmt.Printf("│ %-12s │ %-12s │ %-6d │\n",
+			n.Name, n.IP, n.Netmask)
+	}
+
+	fmt.Println("└──────────────┴──────────────┴────────┘")
+}
+
+// =========================================================================== Modify VMs (END) ==========================================================================
+
+// =========================================================================== Delete VMs ==========================================================================
+func DeleteVMs() {
+
+}
+
+// =========================================================================== Delete VMs (END) ==========================================================================

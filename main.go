@@ -13,7 +13,7 @@ func main() {
 	// go-figure (art banner)
 
 	if len(os.Args) < 2 {
-		fmt.Println("\nUsage : \n\tgo run <file> command \n\t./terraform command \n\nthe commands are: \n\t--Nozaros_starter creating multiple VMs with diffrent ips \n\t--Oranos_starter  creating multiple VLANs \n\t--Moon_starter    creating normal VMs")
+		fmt.Printf("\nUsage : \n\tgo run <file> command \n\t./terraform command \n\nthe commands are: \n\t%s--Nozaros_starter%s creating multiple VMs with diffrent ips \n\t%s--Oranos_starter%s  creating multiple VLANs \n\t%s--Moon_starter%s    creating normal VMs\n", color.Yellow, color.Reset, color.Yellow, color.Reset, color.Yellow, color.Reset)
 		return
 	}
 	hostname, err := os.Hostname()
