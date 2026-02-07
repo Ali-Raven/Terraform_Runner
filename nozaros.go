@@ -82,14 +82,14 @@ func createNewVMs(reader *bufio.Reader, wdir string) {
 			vms = append(vms, vm)
 		}
 
-		retrunedPreview := preview(vms, reader , wdir)
+		retrunedPreview := preview(vms, reader, wdir)
 		if retrunedPreview == 0 {
 			return
 		}
 	}
 }
 func loadExistingVMs(wdir string) []VM {
-	tfvars , err := loadTFvars(wdir)
+	tfvars, err := loadTFvars(wdir)
 	if err != nil {
 		fmt.Println(color.Yellow + "No existing VMs found. Starting fresh..." + color.Reset)
 		return []VM{}
@@ -110,16 +110,14 @@ func preview(vms []VM, reader *bufio.Reader, wdir string) int {
 	case "1":
 		// Save the updated VMs to the file in the working directory
 		currentDir, _ := os.Getwd()
-		if wdir != "" {
-			currentDir = wdir
-		}
-		os.WriteFile(currentDir + wdir + "/terraform.tfvars.json", jsonBytes, 0644)
+		filename := currentDir + wdir + "/terraform.tfvars.json"
+		os.WriteFile(filename, jsonBytes, 0644)
 		return 0
 	case "2":
 		fmt.Println(color.Yellow + "\nRe-enter VM data...\n" + color.Reset)
 		vm := collectVM(reader)
 		vms = append(vms[:len(vms)-1], vm)
-		preview(vms, reader , wdir)
+		preview(vms, reader, wdir)
 	case "3":
 		fmt.Println(color.Red + "Canceled ❌" + color.Reset)
 		fmt.Println("returning to the main menu ...")
@@ -226,7 +224,7 @@ func readLine(reader *bufio.Reader) string {
 
 // =========================================================================== Modify VMs ==========================================================================
 func ModifyVMs(reader *bufio.Reader, wdir string) {
-	fmt.Println(color.Yellow + "\nfetching list of existings vms from terraform.tfvars.json ..." + color.Reset)
+	fmt.Println(color.Yellow + "\nfetching list of existings vms from / ..." + color.Reset)
 	time.Sleep(1 * time.Second)
 
 	tfvars, err := loadTFvars(wdir)
@@ -254,7 +252,7 @@ func ModifyVMs(reader *bufio.Reader, wdir string) {
 
 	tfvars.VMs[vmIDindex] = editVMs(reader, tfvars.VMs[vmIDindex])
 
-	saveNewTFvars(tfvars , wdir)
+	saveNewTFvars(tfvars, wdir)
 }
 
 func editVMs(reader *bufio.Reader, vm VM) VM {
@@ -265,12 +263,12 @@ func editVMs(reader *bufio.Reader, vm VM) VM {
 	vm.MemoryGB = readOptionalINT(reader, "Memory (GB): ", vm.MemoryGB)
 	vm.Gateway = readOptionalValue(reader, "Gateway : ", vm.Gateway)
 	vm.DNSservers = readDNSserversValue(reader, "DNS servers : ", vm.DNSservers)
-	vm.Networks = readNetworks(reader , vm.Networks)
+	vm.Networks = readNetworks(reader, vm.Networks)
 
 	return vm
 }
-func readNetworks(reader *bufio.Reader , network []Network) []Network {
-	// condition for checking the length of network array 
+func readNetworks(reader *bufio.Reader, network []Network) []Network {
+	// condition for checking the length of network array
 	if len(network) == 0 {
 		fmt.Println(color.Yellow + "No Networks to edit" + color.Reset)
 		return network
@@ -278,10 +276,10 @@ func readNetworks(reader *bufio.Reader , network []Network) []Network {
 
 	fmt.Println(color.Yellow + "\nlisting Networks ..." + color.Reset)
 	time.Sleep(1 * time.Second)
-	for i , n := range network {
+	for i, n := range network {
 		fmt.Printf("%d) Name : %s ,  IP ; (%s/%d)\n", i+1, n.Name, n.IP, n.Netmask)
 	}
-	
+
 	fmt.Println("\nEnter the network ID to edit : ")
 	id := atoi(readLine(reader)) - 1
 
@@ -290,9 +288,9 @@ func readNetworks(reader *bufio.Reader , network []Network) []Network {
 		return network
 	}
 
-	network[id].Name = readOptionalValue(reader , "Network Name : " , network[id].Name)
-	network[id].IP = readOptionalValue(reader , "Network IP : " , network[id].IP)
-	network[id].Netmask = readOptionalINT(reader , "Network Netmask : " , network[id].Netmask)
+	network[id].Name = readOptionalValue(reader, "Network Name : ", network[id].Name)
+	network[id].IP = readOptionalValue(reader, "Network IP : ", network[id].IP)
+	network[id].Netmask = readOptionalINT(reader, "Network Netmask : ", network[id].Netmask)
 
 	return network
 }
@@ -337,18 +335,14 @@ func saveNewTFvars(tfvars TFvars, wdir string) {
 	data, _ := json.MarshalIndent(tfvars, "", " ")
 
 	currentDir, _ := os.Getwd()
-	if wdir != "" {
-		currentDir = wdir
-	}
-	os.WriteFile(currentDir + wdir + "/terraform.tfvars.json", data, 0644)
+	filename := currentDir + wdir + "/terraform.tfvars.json"
+	os.WriteFile(filename, data, 0644)
 }
 
 func loadTFvars(wdir string) (TFvars, error) {
 	currentDir, _ := os.Getwd()
-	if wdir != "" {
-		currentDir = wdir
-	}
-	data, err := os.ReadFile(currentDir + wdir + "/terraform.tfvars.json")
+	filename := currentDir + wdir + "/terraform.tfvars.json"
+	data, err := os.ReadFile(filename)
 	if err != nil {
 		return TFvars{}, err
 	}
@@ -396,13 +390,12 @@ func printVMBox(vm VM, index int) {
 func DeleteVMs(wdir string) {
 	fmt.Println(color.Yellow + "\nDelete VMs (functionality is not implemented yet.)" + color.Reset)
 	time.Sleep(2 * time.Second)
-
-	tfvars , err := loadTFvars(wdir)
+	tfvars, err := loadTFvars(wdir)
 	if err != nil {
 		fmt.Println(color.Red + "Failed to load terraform.tfvars.json file" + color.Reset)
 		return
 	}
-	
+
 	GettingVMsLists(tfvars)
 
 	fmt.Print("\nwhich VMs you want to delete ? (ID)  => ")
@@ -412,12 +405,12 @@ func DeleteVMs(wdir string) {
 		fmt.Println(color.Red + "Invalid VM ID" + color.Reset)
 		return
 	}
-	
+
 	fmt.Printf("Deleting VM: %s (Functionality not yet implemented)\n", tfvars.VMs[vmID].Name)
 	time.Sleep(2 * time.Second)
 
 	tfvars.VMs = append(tfvars.VMs[:vmID], tfvars.VMs[vmID+1:]...)
-	saveNewTFvars(tfvars , wdir)
+	saveNewTFvars(tfvars, wdir)
 }
 
 // =========================================================================== Delete VMs (END) ==========================================================================
