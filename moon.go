@@ -7,6 +7,16 @@ import (
 	"time"
 )
 
+
+type NormalVM struct {
+	Name string `json:"name"`
+	RAM  int    `json:"ram"`
+	CPU  int    `json:"cpu_cores"`
+}
+
+type NormalNetwork struct {
+
+}
 func Moon_configure(wdir string) {
 	var (
 		RAM int8
@@ -30,7 +40,7 @@ func Moon_configure(wdir string) {
 	if err != nil {
 		panic(err)
 	}
-	err = os.WriteFile(currentDir+"/normal/terraform.auto.tfvars.json", data, 0644)
+	err = os.WriteFile(currentDir + wdir + "/terraform.auto.tfvars.json", data, 0644)
 	if err != nil {
 		panic(err)
 	} else {
