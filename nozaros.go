@@ -8,6 +8,7 @@ import (
 	"strconv"
 	"strings"
 	"time"
+
 	"github.com/TwiN/go-color"
 )
 
@@ -170,6 +171,7 @@ func collectVM(reader *bufio.Reader) VM {
 	dnsStr = strings.TrimSpace(dnsStr)
 	fmt.Println("--------")
 
+	// Set default DNS servers if user input is empty
 	dns := []string{"1.1.1.1", "1.0.0.1"}
 
 	if dnsStr != "" {
@@ -186,6 +188,56 @@ func collectVM(reader *bufio.Reader) VM {
 		DNSservers: dns,
 	}
 
+	// Collecting Management Network ===========================================================================================================
+	fmt.Println(color.Yellow + "Setting up the Management Network (VM Network Portgroup) ..." + color.Reset)
+
+	time.Sleep(1 * time.Second)
+
+	fmt.Print("\nEnter Management Network Name (default ==> VM Network) :  ")
+	ManagementNetworkName , _ := reader.ReadString('\n')
+	ManagementNetworkName = strings.TrimSpace(ManagementNetworkName)
+
+	if ManagementNetworkName == "" {
+		ManagementNetworkName = "VM Network"
+
+		ManagementNetworkIP := readRequired(reader, "Enter Management Network IP : ")
+		ManagementNetworkNetmask := readRequired(reader, "Enter Management Network Netmask : ")
+
+		vm.Networks = append(vm.Networks, Network{
+			Name:    strings.TrimSpace(ManagementNetworkName),
+			IP:      strings.TrimSpace(ManagementNetworkIP),
+			Netmask: atoi(ManagementNetworkNetmask),
+		})
+	} else {
+		ManagementNetworkIP := readRequired(reader, "Enter Management Network IP : ")
+		ManagementNetworkNetmask := readRequired(reader, "Enter Management Network Netmask : ")
+
+		vm.Networks = append(vm.Networks, Network{
+			Name:    strings.TrimSpace(ManagementNetworkName),
+			IP:      strings.TrimSpace(ManagementNetworkIP),
+			Netmask: atoi(ManagementNetworkNetmask),
+		})
+	}
+
+	// end of collecting Management Network =====================================================================================================
+
+	fmt.Println(color.Yellow + "Do you want to add additional Networks (VLANs or Portgroups) ? " + color.Reset)
+	fmt.Print("Enter 'yes' or 'space' to add or 'no' to skip: ")
+
+	additionalNetChoice, _ := reader.ReadString('\n')
+	additionalNetChoice = strings.TrimSpace(strings.ToLower(additionalNetChoice))
+
+	if additionalNetChoice == "yes" || additionalNetChoice == "y" || additionalNetChoice == "" {
+		vm.Networks = append(vm.Networks, readAdditionalNetworks(reader)...)
+	} else {
+		fmt.Println(color.Yellow + "\nSkipping additional Networks..." + color.Reset)
+	}
+
+	return vm
+}
+
+func readAdditionalNetworks(reader *bufio.Reader) []Network {
+	var vmNetworks []Network
 	fmt.Print(color.Yellow + "How many Networks do you want for your VMs ? " + color.Reset)
 	numNetworkStr, _ := reader.ReadString('\n')
 	netCount := atoi(numNetworkStr)
@@ -196,13 +248,13 @@ func collectVM(reader *bufio.Reader) VM {
 		ip := readRequired(reader, "Network IP: ")
 		netmask := readRequired(reader, "Network Netmask: ")
 
-		vm.Networks = append(vm.Networks, Network{
+		vmNetworks = append(vmNetworks, Network{
 			Name:    strings.TrimSpace(n),
 			IP:      strings.TrimSpace(ip),
 			Netmask: atoi(netmask),
 		})
 	}
-	return vm
+	return vmNetworks
 }
 
 // =========================================================================== Creating New VMs (END) ==========================================================================
