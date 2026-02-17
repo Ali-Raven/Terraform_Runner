@@ -31,6 +31,7 @@ type TFvars struct {
 	VMs []VM `json:"vms"`
 }
 
+
 func Nozaros_configure(wdir string) {
 	reader := bufio.NewReader(os.Stdin)
 
@@ -72,7 +73,7 @@ func createNewVMs(reader *bufio.Reader, wdir string) {
 		numVMstr, _ := reader.ReadString('\n')
 		numVMstr = strings.TrimSpace(numVMstr)
 		numVMcount := atoi(numVMstr)
-
+		
 		// var vms []VM
 		vms := loadExistingVMs(wdir)
 
@@ -164,7 +165,7 @@ func collectVM(reader *bufio.Reader) VM {
 	name := readRequired(reader, "Enter VM Name: ")
 	numCPUstr := readRequired(reader, "Enter Number of CPUs: ")
 	memoryGBstr := readRequired(reader, "Enter Memory in GB: ")
-	gateway := readRequired(reader, "Enter Gateway : ")
+	gateway := readRequired(reader, "Enter Gateway: ")
 
 	fmt.Print("Enter DNS servers : (Default : 1.1.1.1 , 1.0.0.1) ==> ")
 	dnsStr, _ := reader.ReadString('\n')

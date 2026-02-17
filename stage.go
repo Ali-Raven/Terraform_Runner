@@ -14,16 +14,10 @@ func Oranos(hostname, wdir string) {
 	MainStage(wdir , 1)
 }
 
-// func Moon(hostname, wdir string) {
-// 	fmt.Println(color.Blue + "\nUsing Moon_starter" + color.Reset)
-// 	fmt.Println(color.Yellow + "enabling normal mode ..." + color.Reset)
-// 	MainStage(wdir , 2)
-// }
-
 func Nozaros(hostname, wdir string) {
 	fmt.Println(color.Blue + "\nUsing Nozaros_starter" + color.Reset)
 	fmt.Println(color.Yellow + "multi_VM creating mode ..." + color.Reset)
-	MainStage(wdir , 3)
+	MainStage(wdir , 2)
 }
 
 func MainStage(wdir string , componentID int8) {
@@ -39,8 +33,6 @@ func MainStage(wdir string , componentID int8) {
 			case 1:
 				Oranos_configure(wdir)
 			case 2:
-				// Moon_configure(wdir)
-			case 3:
 				Nozaros_configure(wdir)
 		}
 		return

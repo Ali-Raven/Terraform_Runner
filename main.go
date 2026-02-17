@@ -26,7 +26,7 @@ func main() {
 	// var listNames = []string{"~/home/" , hostname , }
 	switch os.Args[1] {
 	case "--Helm_starter":
-		Helm(hostname, "/esxi_setup")
+		Helm(hostname, "/esxi_installer")
 		return
 	case "--Nozaros_starter":
 		Nozaros(hostname, "/final_terraform")
