@@ -44,7 +44,7 @@ func Helm(hostname, wdir string) {
 
 	time.Sleep(1 * time.Second)
 	fmt.Println("\nOptions : ")
-	fmt.Printf("\nOptions : \n\t\n\t1. Esxi Product =>    %sInstallation & Config of ESXI product of vMVare%s \n\t------------\t\n\t2. vCenter Product =>            %sInstallation of vCenter Product of vMware%s \n\t------------\n\t5.Exit" , color.Yellow , color.Reset , color.Yellow , color.Reset)
+	fmt.Printf("\nOptions : \n\t\n\t1. Esxi Product =>\t%sInstallation & Config of ESXI product of vMVare%s \n\t------------\t\n\t2. vCenter Product =>\t%sInstallation of vCenter Product of vMware%s \n\t------------\n\t5.Exit" , color.Yellow , color.Reset , color.Yellow , color.Reset)
 	// fmt.Println("\n1\n2. vCenter Product (Installation)\n3. Exit")
 
 	fmt.Print("\n\nchoice: (1/2/3): ")
@@ -125,7 +125,7 @@ func Custom_iso_maker(wdir string, reader *bufio.Reader, isoName, isoPath, curre
 	usrHostname = strings.TrimSpace(usrHostname)
 
 	fmt.Printf("\nEnter ESXI Password: ")
-	usrPassword, _ := reader.ReadString('\n') // readRequired(reader, "Enter ESXI Password: ")
+	usrPassword, _ = reader.ReadString('\n') // readRequired(reader, "Enter ESXI Password: ")
 	usrPassword = strings.TrimSpace(usrPassword)
 
 	fmt.Printf("\nEnter ESXI IP Address: ")

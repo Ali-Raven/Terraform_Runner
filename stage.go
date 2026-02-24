@@ -26,8 +26,8 @@ func Nozaros(hostname, wdir string) {
 func MainStage(wdir string , componentID int8) {
 	var userinput int8
 	time.Sleep(1 * time.Second)
-	fmt.Println("\nOptions : \n\t\n\t1.Enter Configuration =>    user configuration for VMs \n\t------------\t\n\t2.Plan =>    Show changes required by the current configuration \n\t------------\t\n\t3.apply =>   Create or update infrastructure \n\t------------\t\n\t4.destroy => Destroy previously-created infrastructure \n\t------------\t\n\t5.Exit")
-	fmt.Print("\nchoice: ")
+	fmt.Printf("\nOptions : \n\t\n\t1.Enter Configuration =>\t%suser configuration for VMs%s \n\t------------\t\n\t2.Plan =>\t\t\t%sShow changes required by the current configuration%s \n\t------------\t\n\t3.apply =>\t\t\t%sCreate or update infrastructure%s \n\t------------\t\n\t4.destroy =>\t\t\t%sDestroy previously-created infrastructure%s \n\t------------\t\n\t5.Exit" , color.Yellow , color.Reset , color.Yellow , color.Reset , color.Yellow , color.Reset , color.Yellow , color.Reset)
+	fmt.Print("\n\nchoice: ")
 	fmt.Scan(&userinput)
 	mode := "plan"
 	switch userinput {
