@@ -31,11 +31,11 @@ type TFvars struct {
 	VMs []VM `json:"vms"`
 }
 
-
 func Nozaros_configure(wdir string) {
 	reader := bufio.NewReader(os.Stdin)
 
-	fmt.Println("\nOptions : ")
+	fmt.Println(color.Yellow + "================" + color.Reset)
+	fmt.Println(color.Yellow + "\nOptions : " + color.Reset)
 	fmt.Println("1. create new VMs \n2. Modify existing VMs (Not implemented yet)\n3. Delete VMs (Not implemented yet)\n4. Main Menu\n5. Exit")
 	fmt.Print("\nSelect an option (1-5) : ")
 	optionStr, _ := reader.ReadString('\n')
@@ -47,7 +47,7 @@ func Nozaros_configure(wdir string) {
 	case "2":
 		ModifyVMs(reader, wdir)
 	case "3":
-		DeleteVMs(wdir)
+		DeleteVMs(reader , wdir)
 	case "4":
 		fmt.Println(color.Yellow + "\nReturning to main menu..." + color.Reset)
 		time.Sleep(1 * time.Second)
@@ -73,7 +73,7 @@ func createNewVMs(reader *bufio.Reader, wdir string) {
 		numVMstr, _ := reader.ReadString('\n')
 		numVMstr = strings.TrimSpace(numVMstr)
 		numVMcount := atoi(numVMstr)
-		
+
 		// var vms []VM
 		vms := loadExistingVMs(wdir)
 
@@ -195,7 +195,7 @@ func collectVM(reader *bufio.Reader) VM {
 	time.Sleep(1 * time.Second)
 
 	fmt.Print("\nEnter Management Network Name (default ==> VM Network) :  ")
-	ManagementNetworkName , _ := reader.ReadString('\n')
+	ManagementNetworkName, _ := reader.ReadString('\n')
 	ManagementNetworkName = strings.TrimSpace(ManagementNetworkName)
 
 	if ManagementNetworkName == "" {
@@ -276,7 +276,7 @@ func readLine(reader *bufio.Reader) string {
 
 // =========================================================================== Modify VMs ==========================================================================
 func ModifyVMs(reader *bufio.Reader, wdir string) {
-	fmt.Println(color.Yellow + "\nfetching list of existings vms from / ..." + color.Reset)
+	fmt.Println(color.Yellow + "\nfetching list of existings vms ..." + color.Reset)
 	time.Sleep(1 * time.Second)
 
 	tfvars, err := loadTFvars(wdir)
@@ -288,15 +288,20 @@ func ModifyVMs(reader *bufio.Reader, wdir string) {
 	// fetching the list of existing vms
 	GettingVMsLists(tfvars)
 
-	fmt.Print("\nEnter the ID of the VM you want to modify : ")
+
+	fmt.Printf("\nEnter the ID of the VM you want to modify :  %s(enter 0 to Return to menu )%s =>" , color.Yellow , color.Reset)
 	vmID, _ := reader.ReadString('\n')
 	vmID = strings.TrimSpace(vmID)
 	vmIDindex := atoi(vmID) - 1
 
 	// checking VM index ID is valid or not
-	if vmIDindex < 0 || vmIDindex >= len(tfvars.VMs) {
+	if vmIDindex >= len(tfvars.VMs) {
 		fmt.Println(color.Red + "Invalid VM ID" + color.Reset)
 		return
+	} else if vmID == "0" {
+		fmt.Println(color.Yellow + "\nReturning to menu ..." + color.Reset)
+		time.Sleep(1 * time.Second)
+		Nozaros_configure(wdir)
 	}
 	// Further implementation to modify the VM with the given name
 	fmt.Printf("Modifying VM: %s (Functionality not yet implemented)\n", vmID)
@@ -439,7 +444,7 @@ func printVMBox(vm VM, index int) {
 // =========================================================================== Modify VMs (END) ==========================================================================
 
 // =========================================================================== Delete VMs ==========================================================================
-func DeleteVMs(wdir string) {
+func DeleteVMs(reader *bufio.Reader ,wdir string) {
 	fmt.Println(color.Yellow + "\nDelete VMs (functionality is not implemented yet.)" + color.Reset)
 	time.Sleep(2 * time.Second)
 	tfvars, err := loadTFvars(wdir)
@@ -450,19 +455,29 @@ func DeleteVMs(wdir string) {
 
 	GettingVMsLists(tfvars)
 
-	fmt.Print("\nwhich VMs you want to delete ? (ID)  => ")
-	vmID := atoi(readLine(bufio.NewReader(os.Stdin))) - 1
+	fmt.Printf("\nEnter VM ID that you want to Delete : %s(enter 0 to return to menu)%s => " , color.Yellow , color.Reset)
+	// vmID := atoi(readLine(bufio.NewReader(os.Stdin))) - 1
+	vmID , _ := reader.ReadString('\n')
+	vmID = strings.TrimSpace(vmID)
+	vmIDndex := atoi(vmID) - 1
 
-	if vmID < 0 || vmID >= len(tfvars.VMs) {
+	if vmIDndex >= len(tfvars.VMs) {
 		fmt.Println(color.Red + "Invalid VM ID" + color.Reset)
 		return
+	} else if vmID == "0" {
+		fmt.Println(color.Yellow + "\nReturning to menu ..." + color.Reset)
+		time.Sleep(1 * time.Second)
+		Nozaros_configure(wdir)
 	}
 
-	fmt.Printf("Deleting VM: %s (Functionality not yet implemented)\n", tfvars.VMs[vmID].Name)
+	fmt.Printf("Deleting VM ==> %s%s%s\n",color.Cyan , vmID , color.Reset)
 	time.Sleep(2 * time.Second)
 
-	tfvars.VMs = append(tfvars.VMs[:vmID], tfvars.VMs[vmID+1:]...)
+	// deleting operation 
+	tfvars.VMs = append(tfvars.VMs[:vmIDndex], tfvars.VMs[vmIDndex+1:]...)
 	saveNewTFvars(tfvars, wdir)
+	
+	fmt.Printf("\n%sVM with ID %s has been deleted Successfully%s\n\n" , color.Green , vmID , color.Reset)
 }
 
 // =========================================================================== Delete VMs (END) ==========================================================================

@@ -4,14 +4,15 @@ import (
 	"bufio"
 	"encoding/json"
 	"fmt"
-	"github.com/TwiN/go-color"
-	"github.com/common-nighthawk/go-figure"
 	"log"
 	"os"
 	"os/exec"
 	"strings"
 	"text/tabwriter"
 	"time"
+
+	"github.com/TwiN/go-color"
+	"github.com/common-nighthawk/go-figure"
 )
 
 // initializing global variables
@@ -37,14 +38,14 @@ var (
 // this function is for
 func Helm(hostname, wdir string) {
 	reader := bufio.NewReader(os.Stdin)
-	figure.NewColorFigure("HELM" , "" , "cyan" , true).Print()
+	figure.NewColorFigure("HELM", "", "cyan", true).Print()
 
 	fmt.Println(color.Blue + "\nUsing Helm_starter" + color.Reset)
 	fmt.Println(color.Yellow + "ESXI and vCenter mode ..." + color.Reset)
 
 	time.Sleep(1 * time.Second)
 	fmt.Println("\nOptions : ")
-	fmt.Printf("\nOptions : \n\t\n\t1. Esxi Product =>\t%sInstallation & Config of ESXI product of vMVare%s \n\t------------\t\n\t2. vCenter Product =>\t%sInstallation of vCenter Product of vMware%s \n\t------------\n\t5.Exit" , color.Yellow , color.Reset , color.Yellow , color.Reset)
+	fmt.Printf("\nOptions : \n\t\n\t1. Esxi Product =>\t%sInstallation & Config of ESXI product of vMVare%s \n\t------------\t\n\t2. vCenter Product =>\t%sInstallation of vCenter Product of vMware%s \n\t------------\n\t5.Exit", color.Yellow, color.Reset, color.Yellow, color.Reset)
 	// fmt.Println("\n1\n2. vCenter Product (Installation)\n3. Exit")
 
 	fmt.Print("\n\nchoice: (1/2/3): ")
@@ -183,58 +184,53 @@ func Custom_iso_maker(wdir string, reader *bufio.Reader, isoName, isoPath, curre
 	fmt.Println(color.Green + "Custom image setup is Successfully completed ..." + color.Reset)
 
 	// Ansible_injection_esxi(reader, wdir, currenDir, hostname)
-	Terraform_proxmox(reader, wdir, currenDir, hostname)
+	// Terraform_proxmox(reader, wdir, currenDir, hostname)
 }
 
 // ==================================================================================== Custom ISO maker (END) ==========================================================================================
 
 // ==================================================================================== Terraform Proxmox (ESXI)  ==========================================================================================
-func Terraform_proxmox(reader *bufio.Reader, wdir, crrentDir, hostname string) {
-	fmt.Println(color.Yellow + "\nTerraform Section is running ..." + color.Reset)
-	time.Sleep(1 * time.Second)
-	fmt.Println(color.Yellow + "Enter Authentication Parameters :" + color.Reset)
+// func Terraform_proxmox(reader *bufio.Reader, wdir, crrentDir, hostname string) {
+// 	fmt.Println(color.Yellow + "\nTerraform Section is running ..." + color.Reset)
+// 	time.Sleep(1 * time.Second)
+// 	fmt.Println(color.Yellow + "Enter Authentication Parameters :" + color.Reset)
 
-	usrApiUrl = readRequired(reader, "\nEnter Proxmox API URL : ")
-	usrApiTokenId = readRequired(reader , "Enter Api TOKEN ID : ")
-	usrApiTokenSecret = readRequired(reader , "Enter Api TOKEN Secret : ")
+// 	usrApiUrl = readRequired(reader, "\nEnter Proxmox API URL : ")
+// 	usrApiTokenId = readRequired(reader, "Enter Api TOKEN ID : ")
+// 	usrApiTokenSecret = readRequired(reader, "Enter Api TOKEN Secret : ")
 
-	fmt.Println(color.Green + "\nParameters set Successfully ." + color.Reset)
-	time.Sleep(1 * time.Second)
+// 	fmt.Println(color.Green + "\nParameters set Successfully ." + color.Reset)
+// 	time.Sleep(1 * time.Second)
 
-	// ============= running terraform ==============================
-	
-	// ============= running terraform (END) ==============================
-	
+// 	// ============= running terraform ==============================
 
+// 	// ============= running terraform (END) ==============================
 
+// 	// to continue and Setup
+// 	fmt.Print(color.Yellow + "\nDo you want to install vCenter Product on your Esxi ? (y/n) " + color.Reset)
+// 	usrChoise, _ := reader.ReadString('\n')
+// 	usrChoise = strings.TrimSpace(usrChoise)
 
+// 	switch usrChoise {
+// 	case "y", "yes", "", "Yes", "YES":
+// 		fmt.Println(color.Yellow + "vCenter installation Processing ..." + color.Reset)
+// 		time.Sleep(1 * time.Second)
+// 		Vcenter_setup(wdir, reader)
+// 	case "n", "no", "NO", "No":
+// 		MinimalInputEsxi(reader, wdir)
+// 	default:
+// 		fmt.Println(color.Red + "Ivalid choice." + color.Reset)
+// 		Helm(hostname, wdir)
+// 	}
 
-
-
-	// to continue and Setup
-	fmt.Print(color.Yellow + "\nDo you want to install vCenter Product on your Esxi ? (y/n) " + color.Reset) 
-	usrChoise, _ := reader.ReadString('\n')
-	usrChoise = strings.TrimSpace(usrChoise)
-
-	switch usrChoise {
-	case "y", "yes", "", "Yes", "YES":
-		fmt.Println(color.Yellow + "vCenter installation Processing ..." + color.Reset)
-		time.Sleep(1 * time.Second)
-		Vcenter_setup(wdir, reader)
-	case "n", "no", "NO", "No":
-		MinimalInputEsxi(reader, wdir)
-	default:
-		fmt.Println(color.Red + "Ivalid choice." + color.Reset)
-		Helm(hostname, wdir)
-	}
-
-	fmt.Println(color.Yellow + "\nReturning to Main menu ..." + color.Reset)
-	time.Sleep(1 * time.Second)
-	figure.NewColorFigure("HELM", "", "blue", true).Print()
-	Helm(wdir, hostname)
-}
+// 	fmt.Println(color.Yellow + "\nReturning to Main menu ..." + color.Reset)
+// 	time.Sleep(1 * time.Second)
+// 	figure.NewColorFigure("HELM", "", "blue", true).Print()
+// 	Helm(wdir, hostname)
+// }
 
 // ==================================================================================== Terraform Proxmox (ESXI)(END)  ==========================================================================================
+
 // ==================================================================================== Ansible injection (ESXI)  ==========================================================================================
 
 // func Ansible_injection_esxi(reader *bufio.Reader, wdir, currentDir, hostname string) {
