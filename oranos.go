@@ -26,7 +26,7 @@ func Oranos_configure(wdir string) {
 	text := string(content)
 
 	vlans := getVlans(text)
-	checked_vlans := vlanList(vlans, text , filename)
+	checked_vlans := vlanList(vlans, text, filename)
 
 	text = removeVlansBlock(text)
 
@@ -79,7 +79,7 @@ func vlanList(vlans map[string]string, text string, filename string) map[string]
 		vlans[name] = idStr
 		fmt.Println(color.Green + "VLANs added Successfully" + color.Reset)
 		time.Sleep(1 * time.Second)
-		refactorVlans(text, vlans , filename)
+		refactorVlans(text, vlans, filename)
 	case "2":
 		fmt.Print("Enter VLAN ID to remove: ")
 		removeID, _ := reader.ReadString('\n')
@@ -94,15 +94,15 @@ func vlanList(vlans map[string]string, text string, filename string) map[string]
 				break
 			}
 		}
-		
+
 		if found {
 			fmt.Println(color.Green + "VLAN removed Successfully" + color.Reset)
 			time.Sleep(1 * time.Second)
-			refactorVlans(text, vlans , filename)
+			refactorVlans(text, vlans, filename)
 		} else {
 			fmt.Println(color.Red + "Error : VLAN ID not found." + color.Reset)
 			time.Sleep(1 * time.Second)
-			vlanList(vlans, text , filename)
+			vlanList(vlans, text, filename)
 		}
 
 	case "3":
@@ -112,7 +112,7 @@ func vlanList(vlans map[string]string, text string, filename string) map[string]
 	default:
 		fmt.Println(color.Yellow + "Warning : Invalid choice, returning to options." + color.Reset)
 		time.Sleep(1 * time.Second)
-		vlanList(vlans, text , filename)
+		vlanList(vlans, text, filename)
 	}
 	return vlans
 }
@@ -134,7 +134,7 @@ func refactorVlans(text string, vlans map[string]string, filename string) {
 
 	time.Sleep(2 * time.Second)
 	fmt.Printf("%s%s Updated Successfully %s\n", color.Green, filename, color.Reset)
-	vlanList(vlans, text , filename)
+	vlanList(vlans, text, filename)
 }
 
 func getVlans(text string) map[string]string {
