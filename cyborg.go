@@ -20,7 +20,7 @@ func Cyborg(hostname, wdir string) {
 
 	time.Sleep(1 * time.Second)
 
-	fmt.Printf("\nOptions : \n\t\n\t1.Enter Configuration =>\t%sEnter Ansible Configuration%s %s(Developed in later versions)%s \n\t------------\t\n\t2.Launch Ansible =>\t\t%sExecuting Ansbile on the VMs%s \n\t------------\n\t3.Exit", color.Yellow, color.Reset , color.Cyan , color.Reset, color.Yellow, color.Reset)
+	fmt.Printf("\nOptions : \n\t\n\t1.Enter Configuration =>\t%sEnter Ansible Configuration%s %s(Developed in later versions)%s \n\t------------\t\n\t2.Launch Ansible =>\t\t%sExecuting Ansbile on the VMs%s \n\t------------\n\t3.Exit", color.Yellow, color.Reset, color.Cyan, color.Reset, color.Yellow, color.Reset)
 	fmt.Print()
 	usrChoice := readRequired(reader, "\n\nchoose : ")
 
@@ -59,23 +59,23 @@ func Running_Ansible(hostname, wdir string, reader *bufio.Reader) {
 	// installing LTE core ...
 	fmt.Println(color.Yellow + "Starting installing LTE core ..." + color.Reset)
 	time.Sleep(1 * time.Second)
-	cmd := exec.Command("ansible-playbook" , "-i" , "inventory/hosts" , "playbooks/install-core-new.yml")
+	cmd := exec.Command("ansible-playbook", "-i", "inventory/hosts", "playbooks/install-core-new.yml")
 	cmd.Dir = currenDir + wdir
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
-	if err := cmd.Run() ; err != nil {
+	if err := cmd.Run(); err != nil {
 		log.Fatal(err)
 	}
 	fmt.Println(color.Green + "Installing core is Successfully Completed." + color.Reset)
 
-	// configuring Firewalld 
+	// configuring Firewalld
 	fmt.Println(color.Yellow + "\nStarting Configuring Firewalld ...")
 	time.Sleep(1 * time.Second)
-	cmd2 := exec.Command("ansible-playbook" , "playbooks/config_firewalld.yaml")
+	cmd2 := exec.Command("ansible-playbook", "playbooks/config_firewalld.yaml")
 	cmd2.Dir = currenDir + wdir
 	cmd2.Stdout = os.Stdout
 	cmd2.Stderr = os.Stderr
-	if err2 := cmd2.Run() ; err2 != nil {
+	if err2 := cmd2.Run(); err2 != nil {
 		log.Fatal(err2)
 	}
 	fmt.Println(color.Green + "Configuring firewalld is Successfully Completed." + color.Reset)

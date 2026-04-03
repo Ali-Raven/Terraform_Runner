@@ -34,9 +34,9 @@ type TFvars struct {
 func Nozaros_configure(wdir string) {
 	reader := bufio.NewReader(os.Stdin)
 
-	fmt.Println(color.Yellow + "================" + color.Reset)
+	fmt.Println(color.Yellow + "\n================" + color.Reset)
 	fmt.Println(color.Yellow + "\nOptions : " + color.Reset)
-	fmt.Println("1. create new VMs \n2. Modify existing VMs (Not implemented yet)\n3. Delete VMs (Not implemented yet)\n4. Main Menu\n5. Exit")
+	fmt.Println("1. create new VMs \n2. Modify existing VMs\n3. Delete VMs\n4. Main Menu\n5. Exit")
 	fmt.Print("\nSelect an option (1-5) : ")
 	optionStr, _ := reader.ReadString('\n')
 	optionStr = strings.TrimSpace(optionStr)
@@ -47,7 +47,7 @@ func Nozaros_configure(wdir string) {
 	case "2":
 		ModifyVMs(reader, wdir)
 	case "3":
-		DeleteVMs(reader , wdir)
+		DeleteVMs(reader, wdir)
 	case "4":
 		fmt.Println(color.Yellow + "\nReturning to main menu..." + color.Reset)
 		time.Sleep(1 * time.Second)
@@ -67,13 +67,23 @@ func Nozaros_configure(wdir string) {
 // =========================================================================== Creating New VMs ==========================================================================
 func createNewVMs(reader *bufio.Reader, wdir string) {
 	for {
-		fmt.Println("Creating new VMs...")
-		fmt.Print("\nHow many VMs you want to create ? ")
+		fmt.Println(color.Yellow + "\nCreating new VMs..." + color.Reset)
+		time.Sleep(1 * time.Second)
+		fmt.Print("\n\u2731 How many VMs you want to create ? ")
 
-		numVMstr, _ := reader.ReadString('\n')
-		numVMstr = strings.TrimSpace(numVMstr)
-		numVMcount := atoi(numVMstr)
+		// numVMstr, _ := reader.ReadString('\n')
+		// numVMstr = strings.TrimSpace(numVMstr)
+		// numVMcount := atoi(numVMstr)
 
+		numVMcount, err := readInt(reader)
+		if err != nil {
+			fmt.Println(err)
+			fmt.Println(color.Red + "Enter Numbers Please." + color.Reset)
+			fmt.Println("\nReturning to menu ....")
+			time.Sleep(1 * time.Second)
+			Nozaros_configure(wdir)
+		}
+		
 		// var vms []VM
 		vms := loadExistingVMs(wdir)
 
@@ -197,7 +207,7 @@ func collectVM(reader *bufio.Reader) VM {
 	fmt.Print("\nEnter Management Network Name (default ==> VM Network) :  ")
 	ManagementNetworkName, _ := reader.ReadString('\n')
 	ManagementNetworkName = strings.TrimSpace(ManagementNetworkName)
-
+	fmt.Println("--------")
 	if ManagementNetworkName == "" {
 		ManagementNetworkName = "VM Network"
 
@@ -223,12 +233,12 @@ func collectVM(reader *bufio.Reader) VM {
 	// end of collecting Management Network =====================================================================================================
 
 	fmt.Println(color.Yellow + "Do you want to add additional Networks (VLANs or Portgroups) ? " + color.Reset)
-	fmt.Print("Enter 'yes' or 'space' to add or 'no' to skip: ")
+	fmt.Print("Enter 'yes' or 'Enter' to add or 'no' or 'n' or press any key to skip: ")
 
 	additionalNetChoice, _ := reader.ReadString('\n')
 	additionalNetChoice = strings.TrimSpace(strings.ToLower(additionalNetChoice))
 
-	if additionalNetChoice == "yes" || additionalNetChoice == "y" || additionalNetChoice == "" {
+	if additionalNetChoice == "yes" || additionalNetChoice == "y" || additionalNetChoice == " " {
 		vm.Networks = append(vm.Networks, readAdditionalNetworks(reader)...)
 	} else {
 		fmt.Println(color.Yellow + "\nSkipping additional Networks..." + color.Reset)
@@ -272,6 +282,30 @@ func readLine(reader *bufio.Reader) string {
 	return strings.TrimSpace(s)
 }
 
+func readInt(reader *bufio.Reader) (int, error) {
+	var input []byte
+	for {
+		b, err := reader.ReadByte()
+		if err != nil {
+			return 0, err
+		}
+
+		if b == '\n' || b == ' ' || b == '\r' {
+			break
+		}
+		input = append(input, b)
+	}
+
+	// converting bytes to strings => then to integer
+	numStr := string(input)
+	num, err := strconv.Atoi(strings.TrimSpace(numStr))
+	if err != nil {
+		return 0, fmt.Errorf("%sinvalid Integer (You enter => %s) %s",color.Red , numStr , color.Reset)
+	}
+
+	return num, nil
+}
+
 // =========================================================================== Helper Functions (END) ==========================================================================
 
 // =========================================================================== Modify VMs ==========================================================================
@@ -288,8 +322,7 @@ func ModifyVMs(reader *bufio.Reader, wdir string) {
 	// fetching the list of existing vms
 	GettingVMsLists(tfvars)
 
-
-	fmt.Printf("\nEnter the ID of the VM you want to modify :  %s(enter 0 to Return to menu )%s =>" , color.Yellow , color.Reset)
+	fmt.Printf("\nEnter the ID of the VM you want to modify :  %s(enter 0 to Return to menu )%s =>", color.Yellow, color.Reset)
 	vmID, _ := reader.ReadString('\n')
 	vmID = strings.TrimSpace(vmID)
 	vmIDindex := atoi(vmID) - 1
@@ -337,7 +370,7 @@ func readNetworks(reader *bufio.Reader, network []Network) []Network {
 		fmt.Printf("%d) Name : %s ,  IP ; (%s/%d)\n", i+1, n.Name, n.IP, n.Netmask)
 	}
 
-	fmt.Println("\nEnter the network ID to edit : ")
+	fmt.Print("\nEnter the network ID to edit : ")
 	id := atoi(readLine(reader)) - 1
 
 	if id < 0 || id >= len(network) {
@@ -444,8 +477,8 @@ func printVMBox(vm VM, index int) {
 // =========================================================================== Modify VMs (END) ==========================================================================
 
 // =========================================================================== Delete VMs ==========================================================================
-func DeleteVMs(reader *bufio.Reader ,wdir string) {
-	fmt.Println(color.Yellow + "\nDelete VMs (functionality is not implemented yet.)" + color.Reset)
+func DeleteVMs(reader *bufio.Reader, wdir string) {
+	fmt.Println(color.Yellow + "\nDelete VMs" + color.Reset)
 	time.Sleep(2 * time.Second)
 	tfvars, err := loadTFvars(wdir)
 	if err != nil {
@@ -455,9 +488,9 @@ func DeleteVMs(reader *bufio.Reader ,wdir string) {
 
 	GettingVMsLists(tfvars)
 
-	fmt.Printf("\nEnter VM ID that you want to Delete : %s(enter 0 to return to menu)%s => " , color.Yellow , color.Reset)
+	fmt.Printf("\nEnter VM ID that you want to Delete : %s(enter 0 to return to menu)%s => ", color.Yellow, color.Reset)
 	// vmID := atoi(readLine(bufio.NewReader(os.Stdin))) - 1
-	vmID , _ := reader.ReadString('\n')
+	vmID, _ := reader.ReadString('\n')
 	vmID = strings.TrimSpace(vmID)
 	vmIDndex := atoi(vmID) - 1
 
@@ -470,14 +503,14 @@ func DeleteVMs(reader *bufio.Reader ,wdir string) {
 		Nozaros_configure(wdir)
 	}
 
-	fmt.Printf("Deleting VM ==> %s%s%s\n",color.Cyan , vmID , color.Reset)
+	fmt.Printf("Deleting VM ==> %s%s%s\n", color.Cyan, vmID, color.Reset)
 	time.Sleep(2 * time.Second)
 
-	// deleting operation 
+	// deleting operation
 	tfvars.VMs = append(tfvars.VMs[:vmIDndex], tfvars.VMs[vmIDndex+1:]...)
 	saveNewTFvars(tfvars, wdir)
-	
-	fmt.Printf("\n%sVM with ID %s has been deleted Successfully%s\n\n" , color.Green , vmID , color.Reset)
+
+	fmt.Printf("\n%sVM with ID %s has been deleted Successfully%s\n\n", color.Green, vmID, color.Reset)
 }
 
 // =========================================================================== Delete VMs (END) ==========================================================================
