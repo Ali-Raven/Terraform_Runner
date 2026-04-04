@@ -44,8 +44,7 @@ func Helm(hostname, wdir string) {
 	fmt.Println(color.Yellow + "ESXI and vCenter mode ..." + color.Reset)
 
 	time.Sleep(1 * time.Second)
-	fmt.Println("\nOptions : ")
-	fmt.Printf("\nOptions : \n\t\n\t1. Esxi Product =>\t%sInstallation & Config of ESXI product of vMVare%s \n\t------------\t\n\t2. vCenter Product =>\t%sInstallation of vCenter Product of vMware%s \n\t------------\n\t5.Exit", color.Yellow, color.Reset, color.Yellow, color.Reset)
+	fmt.Printf("\nOptions : \n\t\n\t1. Esxi Product =>\t%sInstallation & Config of ESXI product of vMVare%s \n\t------------\t\n\t2. vCenter Product =>\t%sInstallation of vCenter Product of vMware%s \n\t------------\n\t3.Exit", color.Yellow, color.Reset, color.Yellow, color.Reset)
 	// fmt.Println("\n1\n2. vCenter Product (Installation)\n3. Exit")
 
 	fmt.Print("\n\nchoice: (1/2/3): ")
@@ -63,10 +62,12 @@ func Helm(hostname, wdir string) {
 		fmt.Println(color.Yellow + "Exiting..." + color.Reset)
 		os.Exit(0)
 	default:
-		fmt.Println(color.Yellow + "\n choose one of options ..." + color.Reset)
-		fmt.Println("Options : ")
-		fmt.Println("1. ESXI install & config\n2. vCenter installation")
-
+		fmt.Println(color.Yellow + "\nWarning : choose one of the above options ..." + color.Reset)
+		fmt.Println(color.Yellow + "Returning to menu ..." + color.Reset)
+		time.Sleep(1 * time.Second)
+		Helm(hostname , wdir)
+		// fmt.Println("Options : ")
+		// fmt.Println("1. ESXI install & config\n2. vCenter installation")
 	}
 	// MainStage(wdir , 4)
 }
@@ -272,7 +273,9 @@ func Custom_iso_maker(wdir string, reader *bufio.Reader, isoName, isoPath, curre
 // }
 
 func MinimalInputEsxi(reader *bufio.Reader, wdir string) {
-	fmt.Println(color.Yellow + "\nYou have Existing ESXI host " + color.Reset)
+	figure.NewColorFigure("vCenter Setup", "", "green", true).Print()
+	fmt.Println(color.Blue + "\nUsing vCenter_setup" + color.Reset)
+	fmt.Println(color.Yellow + "\n\nYou have Existing ESXI host " + color.Reset)
 	fmt.Println(color.Yellow + "Enter you vCenter configs : " + color.Reset)
 	usrHostname = readRequired(reader, "\nEnter ESXI Hostname: ")
 	usrIP = readRequired(reader, "Enter ESXI IP Address: ")
@@ -289,8 +292,7 @@ func MinimalInputEsxi(reader *bufio.Reader, wdir string) {
 
 // ==================================================================================== vCenter setup ==========================================================================================
 func Vcenter_setup(wdir string, reader *bufio.Reader) {
-	figure.NewColorFigure("vCenter Setup", "", "green", true).Print()
-	fmt.Println(color.Blue + "\nUsing vCenter_setup" + color.Reset)
+	
 	fmt.Println(color.Yellow + "Setting up vCenter Product ..." + color.Reset)
 	fmt.Println()
 	time.Sleep(1 * time.Second)

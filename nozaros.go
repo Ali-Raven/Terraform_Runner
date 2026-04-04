@@ -12,6 +12,15 @@ import (
 	"github.com/TwiN/go-color"
 )
 
+var (
+	additionalNetwork_name    string
+	additionalNetwork_ip      string
+	additionalNetwork_netmask string
+	ManagementNetworkName     string
+	ManagementNetworkIP       string
+	ManagementNetworkNetmask  string
+)
+
 type Network struct {
 	Name    string `json:"name"`
 	IP      string `json:"ip"`
@@ -34,6 +43,8 @@ type TFvars struct {
 func Nozaros_configure(wdir string) {
 	reader := bufio.NewReader(os.Stdin)
 
+
+	fmt.Println()
 	fmt.Println(color.Yellow + "\n================" + color.Reset)
 	fmt.Println(color.Yellow + "\nOptions : " + color.Reset)
 	fmt.Println("1. create new VMs \n2. Modify existing VMs\n3. Delete VMs\n4. Main Menu\n5. Exit")
@@ -57,7 +68,11 @@ func Nozaros_configure(wdir string) {
 		time.Sleep(1 * time.Second)
 		os.Exit(0)
 	default:
-		fmt.Println(color.Red + "Invalid option. Please try again." + color.Reset)
+		// fmt.Println(color.Red + "Invalid option. Please try again." + color.Reset)
+		fmt.Println(color.Yellow + "\nWarning : choose one of the above options ..." + color.Reset)
+		fmt.Println(color.Yellow + "Returning to menu ..." + color.Reset)
+		time.Sleep(1 * time.Second)
+		Nozaros_configure(wdir)
 	}
 	time.Sleep(1 * time.Second)
 	fmt.Printf("%s%s Updated Successfully. %s\n", color.Green, "terraform.tfvars.json", color.Reset)
@@ -83,7 +98,7 @@ func createNewVMs(reader *bufio.Reader, wdir string) {
 			time.Sleep(1 * time.Second)
 			Nozaros_configure(wdir)
 		}
-		
+
 		// var vms []VM
 		vms := loadExistingVMs(wdir)
 
@@ -93,10 +108,12 @@ func createNewVMs(reader *bufio.Reader, wdir string) {
 			vms = append(vms, vm)
 		}
 
+		Yml(vms)
 		retrunedPreview := preview(vms, reader, wdir)
 		if retrunedPreview == 0 {
 			return
 		}
+
 	}
 }
 func loadExistingVMs(wdir string) []VM {
@@ -123,11 +140,14 @@ func preview(vms []VM, reader *bufio.Reader, wdir string) int {
 		currentDir, _ := os.Getwd()
 		filename := currentDir + wdir + "/terraform.tfvars.json"
 		os.WriteFile(filename, jsonBytes, 0644)
+		// Yml(currentDir)
 		return 0
 	case "2":
 		fmt.Println(color.Yellow + "\nRe-enter VM data...\n" + color.Reset)
 		vm := collectVM(reader)
 		vms = append(vms[:len(vms)-1], vm)
+
+		// fmt.Println(vms)
 		preview(vms, reader, wdir)
 	case "3":
 		fmt.Println(color.Red + "Canceled ❌" + color.Reset)
@@ -201,34 +221,34 @@ func collectVM(reader *bufio.Reader) VM {
 
 	// Collecting Management Network ===========================================================================================================
 	fmt.Println(color.Yellow + "Setting up the Management Network (VM Network Portgroup) ..." + color.Reset)
-
+	
 	time.Sleep(1 * time.Second)
-
+	
 	fmt.Print("\nEnter Management Network Name (default ==> VM Network) :  ")
-	ManagementNetworkName, _ := reader.ReadString('\n')
+	ManagementNetworkName, _ = reader.ReadString('\n')
 	ManagementNetworkName = strings.TrimSpace(ManagementNetworkName)
 	fmt.Println("--------")
 	if ManagementNetworkName == "" {
 		ManagementNetworkName = "VM Network"
-
-		ManagementNetworkIP := readRequired(reader, "Enter Management Network IP : ")
-		ManagementNetworkNetmask := readRequired(reader, "Enter Management Network Netmask : ")
-
+		
+		ManagementNetworkIP = readRequired(reader, "Enter Management Network IP : ")
+		ManagementNetworkNetmask = readRequired(reader, "Enter Management Network Netmask : ")
+		
 		vm.Networks = append(vm.Networks, Network{
 			Name:    strings.TrimSpace(ManagementNetworkName),
 			IP:      strings.TrimSpace(ManagementNetworkIP),
 			Netmask: atoi(ManagementNetworkNetmask),
 		})
-	} else {
-		ManagementNetworkIP := readRequired(reader, "Enter Management Network IP : ")
-		ManagementNetworkNetmask := readRequired(reader, "Enter Management Network Netmask : ")
-
-		vm.Networks = append(vm.Networks, Network{
-			Name:    strings.TrimSpace(ManagementNetworkName),
-			IP:      strings.TrimSpace(ManagementNetworkIP),
-			Netmask: atoi(ManagementNetworkNetmask),
-		})
-	}
+		} else {
+			ManagementNetworkIP = readRequired(reader, "Enter Management Network IP : ")
+			ManagementNetworkNetmask = readRequired(reader, "Enter Management Network Netmask : ")
+			
+			vm.Networks = append(vm.Networks, Network{
+				Name:    strings.TrimSpace(ManagementNetworkName),
+				IP:      strings.TrimSpace(ManagementNetworkIP),
+				Netmask: atoi(ManagementNetworkNetmask),
+			})
+		}
 
 	// end of collecting Management Network =====================================================================================================
 
@@ -254,15 +274,16 @@ func readAdditionalNetworks(reader *bufio.Reader) []Network {
 	netCount := atoi(numNetworkStr)
 
 	for j := 0; j < netCount; j++ {
-		fmt.Printf(color.Yellow+"\n--- Network %d ---\n"+color.Reset, j+1)
-		n := readRequired(reader, "Network name: ")
-		ip := readRequired(reader, "Network IP: ")
-		netmask := readRequired(reader, "Network Netmask: ")
+		fmt.Printf(color.Yellow + "\n--- Network %d ---\n" + color.Reset, j+1)
+		additionalNetwork_name = readRequired(reader, "Network name: ")
+		additionalNetwork_ip = readRequired(reader, "Network IP: ")
+		additionalNetwork_netmask = readRequired(reader, "Network Netmask: ")
 
+		// Yml(additionalNetwork_ip)
 		vmNetworks = append(vmNetworks, Network{
-			Name:    strings.TrimSpace(n),
-			IP:      strings.TrimSpace(ip),
-			Netmask: atoi(netmask),
+			Name:    strings.TrimSpace(additionalNetwork_name),
+			IP:      strings.TrimSpace(additionalNetwork_ip),
+			Netmask: atoi(additionalNetwork_netmask),
 		})
 	}
 	return vmNetworks
@@ -300,7 +321,7 @@ func readInt(reader *bufio.Reader) (int, error) {
 	numStr := string(input)
 	num, err := strconv.Atoi(strings.TrimSpace(numStr))
 	if err != nil {
-		return 0, fmt.Errorf("%sinvalid Integer (You enter => %s) %s",color.Red , numStr , color.Reset)
+		return 0, fmt.Errorf("%sinvalid Integer (You enter => %s) %s", color.Red, numStr, color.Reset)
 	}
 
 	return num, nil

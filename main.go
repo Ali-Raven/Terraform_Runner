@@ -11,7 +11,6 @@ func main() {
 	// go-figure (art banner)
 	// figure.NewColorFigure("BBDH DevOps", "", "cyan", true).Print()
 	// go-figure (art banner)
-
 	if len(os.Args) < 2 {
 		figure.NewColorFigure("BBDH DevOps", "", "cyan", true).Print()
 		fmt.Printf("\nUsage : \n\tgo run <file> command \n\t./terraform command \n\nthe commands are: \n\t%s--Helm_starter%s      Setting up the Esxi product \n\t%s--Nozaros_starter%s   creating multiple VMs with diffrent ips \n\t%s--Oranos_starter%s    creating multiple VLANs \n\t%s--Cyborg_starter%s    Configuring and installing packages with Ansible \n", color.Yellow, color.Reset, color.Yellow, color.Reset, color.Yellow, color.Reset, color.Yellow, color.Reset)

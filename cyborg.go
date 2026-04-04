@@ -37,7 +37,7 @@ func Cyborg(hostname, wdir string) {
 		os.Exit(0)
 	default:
 		fmt.Println(color.Yellow + "Choose from the Options ..." + color.Reset)
-		fmt.Println(color.Yellow + "Returning ..." + color.Reset)
+		fmt.Print(color.Yellow + "\nReturning ...\n\n" + color.Reset)
 		time.Sleep(1 * time.Second)
 		Cyborg(hostname, wdir)
 	}
