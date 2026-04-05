@@ -19,6 +19,7 @@ var (
 	ManagementNetworkName     string
 	ManagementNetworkIP       string
 	ManagementNetworkNetmask  string
+	vms                       []VM
 )
 
 type Network struct {
@@ -43,11 +44,10 @@ type TFvars struct {
 func Nozaros_configure(wdir string) {
 	reader := bufio.NewReader(os.Stdin)
 
-
 	fmt.Println()
 	fmt.Println(color.Yellow + "\n================" + color.Reset)
 	fmt.Println(color.Yellow + "\nOptions : " + color.Reset)
-	fmt.Println("1. create new VMs \n2. Modify existing VMs\n3. Delete VMs\n4. Main Menu\n5. Exit")
+	fmt.Println("1. create new VMs \n2. Modify existing VMs\n3. Delete VMs\n4. Generating Inventory.yml file\n5. Main menu\n6. Exit")
 	fmt.Print("\nSelect an option (1-5) : ")
 	optionStr, _ := reader.ReadString('\n')
 	optionStr = strings.TrimSpace(optionStr)
@@ -60,15 +60,18 @@ func Nozaros_configure(wdir string) {
 	case "3":
 		DeleteVMs(reader, wdir)
 	case "4":
+		Yml(wdir , vms)
+		time.Sleep(1 * time.Second)
+		Nozaros_configure(wdir)
+	case "5":
 		fmt.Println(color.Yellow + "\nReturning to main menu..." + color.Reset)
 		time.Sleep(1 * time.Second)
 		main()
-	case "5":
+	case "6":
 		fmt.Println("Exiting...")
 		time.Sleep(1 * time.Second)
 		os.Exit(0)
 	default:
-		// fmt.Println(color.Red + "Invalid option. Please try again." + color.Reset)
 		fmt.Println(color.Yellow + "\nWarning : choose one of the above options ..." + color.Reset)
 		fmt.Println(color.Yellow + "Returning to menu ..." + color.Reset)
 		time.Sleep(1 * time.Second)
@@ -100,15 +103,16 @@ func createNewVMs(reader *bufio.Reader, wdir string) {
 		}
 
 		// var vms []VM
-		vms := loadExistingVMs(wdir)
-
+		vms , errVM := loadExistingVMs(wdir)
+		if errVM != nil {
+			panic(errVM)
+		}
 		for i := 0; i < numVMcount; i++ {
 			fmt.Printf(color.Yellow+"\n--- VM %d ---\n"+color.Reset, i+1)
 			vm := collectVM(reader)
 			vms = append(vms, vm)
 		}
 
-		Yml(vms)
 		retrunedPreview := preview(vms, reader, wdir)
 		if retrunedPreview == 0 {
 			return
@@ -116,13 +120,13 @@ func createNewVMs(reader *bufio.Reader, wdir string) {
 
 	}
 }
-func loadExistingVMs(wdir string) []VM {
+func loadExistingVMs(wdir string) ([]VM , error) {
 	tfvars, err := loadTFvars(wdir)
 	if err != nil {
 		fmt.Println(color.Yellow + "No existing VMs found. Starting fresh..." + color.Reset)
-		return []VM{}
+		return []VM{} , err
 	}
-	return tfvars.VMs
+	return tfvars.VMs , nil
 }
 func preview(vms []VM, reader *bufio.Reader, wdir string) int {
 	data := TFvars{VMs: vms}
@@ -221,34 +225,34 @@ func collectVM(reader *bufio.Reader) VM {
 
 	// Collecting Management Network ===========================================================================================================
 	fmt.Println(color.Yellow + "Setting up the Management Network (VM Network Portgroup) ..." + color.Reset)
-	
+
 	time.Sleep(1 * time.Second)
-	
+
 	fmt.Print("\nEnter Management Network Name (default ==> VM Network) :  ")
 	ManagementNetworkName, _ = reader.ReadString('\n')
 	ManagementNetworkName = strings.TrimSpace(ManagementNetworkName)
 	fmt.Println("--------")
 	if ManagementNetworkName == "" {
 		ManagementNetworkName = "VM Network"
-		
+
 		ManagementNetworkIP = readRequired(reader, "Enter Management Network IP : ")
 		ManagementNetworkNetmask = readRequired(reader, "Enter Management Network Netmask : ")
-		
+
 		vm.Networks = append(vm.Networks, Network{
 			Name:    strings.TrimSpace(ManagementNetworkName),
 			IP:      strings.TrimSpace(ManagementNetworkIP),
 			Netmask: atoi(ManagementNetworkNetmask),
 		})
-		} else {
-			ManagementNetworkIP = readRequired(reader, "Enter Management Network IP : ")
-			ManagementNetworkNetmask = readRequired(reader, "Enter Management Network Netmask : ")
-			
-			vm.Networks = append(vm.Networks, Network{
-				Name:    strings.TrimSpace(ManagementNetworkName),
-				IP:      strings.TrimSpace(ManagementNetworkIP),
-				Netmask: atoi(ManagementNetworkNetmask),
-			})
-		}
+	} else {
+		ManagementNetworkIP = readRequired(reader, "Enter Management Network IP : ")
+		ManagementNetworkNetmask = readRequired(reader, "Enter Management Network Netmask : ")
+
+		vm.Networks = append(vm.Networks, Network{
+			Name:    strings.TrimSpace(ManagementNetworkName),
+			IP:      strings.TrimSpace(ManagementNetworkIP),
+			Netmask: atoi(ManagementNetworkNetmask),
+		})
+	}
 
 	// end of collecting Management Network =====================================================================================================
 
@@ -274,7 +278,7 @@ func readAdditionalNetworks(reader *bufio.Reader) []Network {
 	netCount := atoi(numNetworkStr)
 
 	for j := 0; j < netCount; j++ {
-		fmt.Printf(color.Yellow + "\n--- Network %d ---\n" + color.Reset, j+1)
+		fmt.Printf(color.Yellow+"\n--- Network %d ---\n"+color.Reset, j+1)
 		additionalNetwork_name = readRequired(reader, "Network name: ")
 		additionalNetwork_ip = readRequired(reader, "Network IP: ")
 		additionalNetwork_netmask = readRequired(reader, "Network Netmask: ")
