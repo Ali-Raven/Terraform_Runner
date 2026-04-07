@@ -60,7 +60,7 @@ func Nozaros_configure(wdir string) {
 	case "3":
 		DeleteVMs(reader, wdir)
 	case "4":
-		Yml(wdir , vms)
+		Yml(wdir, vms)
 		time.Sleep(1 * time.Second)
 		Nozaros_configure(wdir)
 	case "5":
@@ -103,7 +103,7 @@ func createNewVMs(reader *bufio.Reader, wdir string) {
 		}
 
 		// var vms []VM
-		vms , errVM := loadExistingVMs(wdir)
+		vms, errVM := loadExistingVMs(wdir)
 		if errVM != nil {
 			panic(errVM)
 		}
@@ -120,13 +120,13 @@ func createNewVMs(reader *bufio.Reader, wdir string) {
 
 	}
 }
-func loadExistingVMs(wdir string) ([]VM , error) {
+func loadExistingVMs(wdir string) ([]VM, error) {
 	tfvars, err := loadTFvars(wdir)
 	if err != nil {
 		fmt.Println(color.Yellow + "No existing VMs found. Starting fresh..." + color.Reset)
-		return []VM{} , err
+		return []VM{}, err
 	}
-	return tfvars.VMs , nil
+	return tfvars.VMs, nil
 }
 func preview(vms []VM, reader *bufio.Reader, wdir string) int {
 	data := TFvars{VMs: vms}
@@ -347,7 +347,7 @@ func ModifyVMs(reader *bufio.Reader, wdir string) {
 	// fetching the list of existing vms
 	GettingVMsLists(tfvars)
 
-	fmt.Printf("\nEnter the ID of the VM you want to modify :  %s(enter 0 to Return to menu )%s =>", color.Yellow, color.Reset)
+	fmt.Printf("\nEnter the ID of the VM you want to modify :  %s(enter 0 to Return to menu )%s => ", color.Yellow, color.Reset)
 	vmID, _ := reader.ReadString('\n')
 	vmID = strings.TrimSpace(vmID)
 	vmIDindex := atoi(vmID) - 1
@@ -384,6 +384,38 @@ func editVMs(reader *bufio.Reader, vm VM) VM {
 }
 func readNetworks(reader *bufio.Reader, network []Network) []Network {
 	// condition for checking the length of network array
+	fmt.Println("\nNetwork Options : \n1. Modify Existing Networks value\n2. Add Network to the List\n3. Delete Network")
+
+	fmt.Print("\nEnter your choice : (1/2/3) ")
+	usrInput, _ := reader.ReadString('\n')
+	usrInput = strings.TrimSpace(usrInput)
+
+	switch usrInput {
+	case "1":
+		break
+	case "2":
+		network = append(network, readAdditionalNetworks(reader)...)
+		fmt.Println(color.Green + "Network Added Successfully ." + color.Reset)
+		return network
+	case "3":
+		if len(network) == 0 {
+			fmt.Println(color.Yellow + "No Networks to edit" + color.Reset)
+			return network
+		}
+		fmt.Println(color.Yellow + "\nlisting Networks ..." + color.Reset)
+		time.Sleep(1 * time.Second)
+		for i, n := range network {
+			fmt.Printf("%d) Name : %s ,  IP ; (%s/%d)\n", i+1, n.Name, n.IP, n.Netmask)
+		}
+		
+		fmt.Print("\nwhich one of Network you want to Delete ? (Enter ID) ")
+		id := atoi(readLine(reader)) - 1
+
+		network = append(network[:id], network[id+1:]...)
+		fmt.Println(color.Green + "Network is removed Successfully" + color.Reset)
+		return network
+
+	}
 	if len(network) == 0 {
 		fmt.Println(color.Yellow + "No Networks to edit" + color.Reset)
 		return network
@@ -394,20 +426,34 @@ func readNetworks(reader *bufio.Reader, network []Network) []Network {
 	for i, n := range network {
 		fmt.Printf("%d) Name : %s ,  IP ; (%s/%d)\n", i+1, n.Name, n.IP, n.Netmask)
 	}
+	// fmt.Println("0. Add Network")
 
-	fmt.Print("\nEnter the network ID to edit : ")
+	
+	fmt.Print("\nEnter the network ID to edit (Or Add New Network) : ")
 	id := atoi(readLine(reader)) - 1
 
 	if id < 0 || id >= len(network) {
 		fmt.Println("Invalid ID")
 		return network
 	}
+	// } else if (id + 1) == 0 {
+	// 	network = append(network, readAdditionalNetworks(reader)...)
+	// 	fmt.Println(color.Green + "Network Added Successfully ." + color.Reset)
+	// 	return network
+	// } else if id == 100 {
+	// 	network = append(network[:id], network[id+1:]...)
+	// 	fmt.Println(color.Green + "Network is removed Successfully" + color.Reset)
+	// 	return network
+	// }
 
 	network[id].Name = readOptionalValue(reader, "Network Name : ", network[id].Name)
 	network[id].IP = readOptionalValue(reader, "Network IP : ", network[id].IP)
 	network[id].Netmask = readOptionalINT(reader, "Network Netmask : ", network[id].Netmask)
 
 	return network
+}
+func deleteNetwork() {
+
 }
 func readOptionalValue(reader *bufio.Reader, label, current string) string {
 	fmt.Printf("%s [current value => %s]: ", label, current)
