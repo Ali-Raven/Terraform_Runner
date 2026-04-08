@@ -132,7 +132,7 @@ func refactorVlans(text string, vlans map[string]string, filename string) {
 
 	os.WriteFile(filename, []byte(builder.String()), 0644)
 
-	time.Sleep(2 * time.Second)
+	time.Sleep(1 * time.Second)
 	fmt.Printf("%s%s Updated Successfully %s\n", color.Green, filename, color.Reset)
 	vlanList(vlans, text, filename)
 }

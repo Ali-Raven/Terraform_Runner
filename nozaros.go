@@ -407,7 +407,7 @@ func readNetworks(reader *bufio.Reader, network []Network) []Network {
 		for i, n := range network {
 			fmt.Printf("%d) Name : %s ,  IP ; (%s/%d)\n", i+1, n.Name, n.IP, n.Netmask)
 		}
-		
+
 		fmt.Print("\nwhich one of Network you want to Delete ? (Enter ID) ")
 		id := atoi(readLine(reader)) - 1
 
@@ -428,7 +428,6 @@ func readNetworks(reader *bufio.Reader, network []Network) []Network {
 	}
 	// fmt.Println("0. Add Network")
 
-	
 	fmt.Print("\nEnter the network ID to edit (Or Add New Network) : ")
 	id := atoi(readLine(reader)) - 1
 

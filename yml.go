@@ -10,44 +10,59 @@ import (
 )
 
 var (
+	ssh_defaultPort     int = 22
 	sgwc_managementIP   string
-	sgwc_managementPort string
-	sgwc_gtpc           string
-	sgwc_gtpcPort       int = 2123
-	sgwc_pfcp           string
-	sgwc_pfcpPort       int = 8805
-	sgwc_gtpu           string
-	sgwc_gtpuPort       int = 2152
+	sgwc_managementPort int = ssh_defaultPort
+	sgwc_s11            string
+	sgwc_s11Port        int = 2123
+	sgwc_sxa            string
+	sgwc_sxaPort        int = 8805
+	sgwc_s5c            string
+	sgwc_s5cPort        int = 2124
 	sgwu_managementIP   string
-	sgwu_managementPort string
-	sgwu_gtpu           string
-	sgwu_gtpuPort       int = 2152
-	sgwu_pfcp           string
-	sgwu_pfcpPort       int = 8805
+	sgwu_managementPort int = ssh_defaultPort
+	sgwu_sxa            string
+	sgwu_sxaPort        int = 2152
+	sgwu_s5u            string
+	sgwu_s5uPort        int = 8805
+	sgwu_s1u            string
+	sgwu_s1uPort        int = 3333
 	upf_managemetIP     string
-	upf_managementPort  string
-	upf_pfcp            string
-	upf_pfcpPort        int = 8805
-	upf_gtpu            string
-	upf_gtpuPort        int = 2152
+	upf_managementPort  int = ssh_defaultPort
+	upf_sxb             string
+	upf_sxbPort         int = 8805
+	upf_sxu             string
+	upf_sxuPort         int = 8806
+	upf_s5u             string
+	upf_s5uPort         int = 2153
+	upf_SGI             string
+	upf_sgiPort         int = 2152
 	smf_managementIP    string
-	smf_managementPort  string
-	smf_gtpc            string
-	smf_gtpcPort        int = 2123
-	smf_pfcp            string
-	smf_pfcpPort        int = 8805
-	smf_gtpu            string
-	smf_gtpuPort        int = 2152
-	mme_gtpc            string
-	mme_gtpcPort        int = 2123
+	smf_managementPort  int = ssh_defaultPort
+	smf_gx              string
+	smf_gxPort          int = 2123
+	smf_s5c             string
+	smf_s5cPort         int = 8805
+	smf_sxb             string
+	smf_sxbPort         int = 2152
+	smf_sxu             string
+	smf_sxuPort         int = 8806
+	mme_s11             string
+	mme_s11Port         int = 2123
 	mme_s1ap            string
 	mme_s1apPort        int = 36412
+	mme_s6a             string
+	mme_s6aPort         int = 2221
 	mme_managementIP    string
-	mme_managementPort  string
+	mme_managementPort  int = ssh_defaultPort
 	hss_managementIP    string
-	hss_managementPort  string
+	hss_managementPort  int = ssh_defaultPort
+	hss_s6a             string
+	hss_s6aPort         int = 2223
 	pcrf_managementIP   string
-	pcrf_managementPort string
+	pcrf_managementPort int = ssh_defaultPort
+	pcrf_gx             string
+	pcrf_gxPort         int = 4434
 	core_name           string
 	var_path            string
 	tls_path            string
@@ -69,7 +84,7 @@ func Yml(wdir string, vms []VM) {
 	fmt.Println(color.Green + "VMs loaded Successfully." + color.Reset)
 	for i := 0; i < len(vms); i++ {
 
-		if len(vms[i].Networks) < 3 {
+		if len(vms[i].Networks) < 2 {
 			fmt.Printf("%sError : not enough networks interface for %s%s\n", color.Red, vms[i].Name, color.Reset)
 			time.Sleep(300 * time.Millisecond)
 			flagErr = true
@@ -84,35 +99,42 @@ func Yml(wdir string, vms []VM) {
 	// Assigning MME vars
 	mme_managementIP = vms[0].Networks[0].IP
 	mme_s1ap = vms[0].Networks[1].IP
-	mme_gtpc = vms[0].Networks[2].IP
+	mme_s6a = vms[0].Networks[2].IP
+	mme_s11 = vms[0].Networks[3].IP
 
 	// Assigning SGW-C
 	sgwc_managementIP = vms[3].Networks[0].IP
-	sgwc_pfcp = vms[3].Networks[1].IP
-	sgwc_gtpc = vms[3].Networks[2].IP
-	sgwc_gtpu = vms[3].Networks[3].IP
+	sgwc_s11 = vms[3].Networks[1].IP
+	sgwc_sxa = vms[3].Networks[2].IP
+	sgwc_s5c = vms[3].Networks[3].IP
 
 	// Assigning SGW-U
 	sgwu_managementIP = vms[4].Networks[0].IP
-	sgwu_gtpu = vms[4].Networks[1].IP
-	sgwu_pfcp = vms[4].Networks[2].IP
+	sgwu_sxa = vms[4].Networks[1].IP
+	sgwu_s5u = vms[4].Networks[2].IP
+	sgwu_s1u = vms[4].Networks[3].IP
 
 	// Assigning SMF
 	smf_managementIP = vms[5].Networks[0].IP
-	smf_gtpc = vms[5].Networks[1].IP
-	smf_pfcp = vms[5].Networks[2].IP
-	smf_gtpu = vms[5].Networks[3].IP
+	smf_gx = vms[5].Networks[1].IP
+	smf_s5c = vms[5].Networks[2].IP
+	smf_sxb = vms[5].Networks[3].IP
+	smf_sxu = vms[5].Networks[4].IP
 
 	// Assigning UPF
 	upf_managemetIP = vms[6].Networks[0].IP
-	upf_pfcp = vms[6].Networks[1].IP
-	upf_gtpu = vms[6].Networks[2].IP
+	upf_sxb = vms[6].Networks[1].IP
+	upf_sxu = vms[6].Networks[2].IP
+	upf_s5u = vms[6].Networks[3].IP
+	upf_SGI = vms[6].Networks[4].IP
 
 	// Assigning HSS
 	hss_managementIP = vms[1].Networks[0].IP
+	hss_s6a = vms[1].Networks[1].IP
 
 	// Assigning PCRF
 	pcrf_managementIP = vms[2].Networks[0].IP
+	pcrf_gx = vms[2].Networks[1].IP
 
 	core_name = "{{ core_name }}"
 	var_path = "/var/log/" + core_name + "/"
@@ -122,70 +144,116 @@ func Yml(wdir string, vms []VM) {
 	diam_realm = "epc.mnc0{{ plmn.mnc }}.mcc{{ plmn.mcc }}.3gppnetwork.org"
 
 	data := struct {
-		SGWC_managementIP  string
-		SGWC_gtpc          string
-		SGWC_gtpcPort      int
-		SGWC_pfcp          string
-		SGWC_pfcpPort      int
-		MME_gtpc           string
-		MME_gtpcPort       int
-		MME_managementIP   string
-		MME_s1ap           string
-		MME_s1apPort       int
-		SGWU_gtpu          string
-		SGWU_gtpuPort      int
-		SGWU_pfcp          string
-		SGWU_pfcpPort      int
-		SGWU_managementIP  string
-		SMF_managementIP   string
-		SMF_gtpc           string
-		SMF_gtpcPort       int
-		SMF_gtpu           string
-		SMF_gtpuPort       int
-		SMF_pfcp           string
-		SMF_pfcpPort       int
-		UPF_managementIP   string
-		UPF_pfcp           string
-		UPF_pfcpPort       int
-		UPF_gtpu           string
-		UPF_gtpuPort       int
-		HSS_managementIP   string
-		PCRF_managementIP  string
-		Core_name          string
-		Var_path           string
-		Tls_path           string
-		Inventory_hostname string
-		Diameter_path      string
-		Diam_Realm         string
+		SGWC_managementIP   string
+		SGWC_managementPort int
+		SGWC_s11            string
+		SGWC_s11Port        int
+		SGWC_sxa            string
+		SGWC_sxaPort        int
+		SGWC_s5c            string
+		SGWC_s5cPort        int
+		MME_s11             string
+		MME_s11Port         int
+		MME_managementIP    string
+		MME_managementPort  int
+		MME_s1ap            string
+		MME_s1apPort        int
+		MME_s6a             string
+		MME_s6aPort         int
+		SGWU_sxa            string
+		SGWU_sxaPort        int
+		SGWU_s5u            string
+		SGWU_s5uPort        int
+		SGWU_s1u            string
+		SGWU_s1uPort        int
+		SGWU_managementIP   string
+		SGWU_managementPort int
+		SMF_managementIP    string
+		SMF_managementPort  int
+		SMF_gx              string
+		SMF_gxPort          int
+		SMF_s5c             string
+		SMF_s5cPort         int
+		SMF_sxb             string
+		SMF_sxbPort         int
+		SMF_sxu             string
+		SMF_sxuPort         int
+		UPF_managementIP    string
+		UPF_managementPort  int
+		UPF_sxb             string
+		UPF_sxbPort         int
+		UPF_sxu             string
+		UPF_sxuPort         int
+		UPF_s5u             string
+		UPF_s5uPort         int
+		UPF_sgi             string
+		UPF_sgiPort         int
+		HSS_managementIP    string
+		HSS_managementPort  int
+		HSS_s6a             string
+		HSS_s6aPort         int
+		PCRF_managementIP   string
+		PCRF_managementPort int
+		PCRF_gx             string
+		PCRF_gxPort         int
+		Core_name           string
+		Var_path            string
+		Tls_path            string
+		Inventory_hostname  string
+		Diameter_path       string
+		Diam_Realm          string
 	}{sgwc_managementIP,
-		sgwc_gtpc,
-		sgwc_gtpcPort,
-		sgwc_pfcp,
-		sgwc_pfcpPort,
-		mme_gtpc,
-		mme_gtpcPort,
+		sgwc_managementPort,
+		sgwc_s11,
+		sgwc_s11Port,
+		sgwc_sxa,
+		sgwc_sxaPort,
+		sgwc_s5c,
+		sgwc_s5cPort,
+		mme_s11,
+		mme_s11Port,
 		mme_managementIP,
+		mme_managementPort,
 		mme_s1ap,
 		mme_s1apPort,
-		sgwu_gtpu,
-		sgwu_gtpuPort,
-		sgwu_pfcp,
-		sgwu_pfcpPort,
+		mme_s6a,
+		mme_s6aPort,
+		sgwu_sxa,
+		sgwu_sxaPort,
+		sgwu_s5u,
+		sgwu_s5uPort,
+		sgwu_s1u,
+		sgwu_s1uPort,
 		sgwu_managementIP,
+		sgwu_managementPort,
 		smf_managementIP,
-		smf_gtpc,
-		smf_gtpcPort,
-		smf_gtpu,
-		smf_gtpuPort,
-		smf_pfcp,
-		smf_pfcpPort,
+		smf_managementPort,
+		smf_gx,
+		smf_gxPort,
+		smf_s5c,
+		smf_s5cPort,
+		smf_sxb,
+		smf_sxbPort,
+		smf_sxu,
+		smf_sxuPort,
 		upf_managemetIP,
-		upf_pfcp,
-		upf_pfcpPort,
-		upf_gtpu,
-		upf_gtpuPort,
+		upf_managementPort,
+		upf_sxb,
+		upf_sxbPort,
+		upf_sxu,
+		upf_sxuPort,
+		upf_s5u,
+		upf_s5uPort,
+		upf_SGI,
+		upf_sgiPort,
 		hss_managementIP,
+		hss_managementPort,
+		hss_s6a,
+		hss_s6aPort,
 		pcrf_managementIP,
+		pcrf_managementPort,
+		pcrf_gx,
+		pcrf_gxPort,
 		core_name,
 		var_path,
 		tls_path,
@@ -202,7 +270,9 @@ func Yml(wdir string, vms []VM) {
     var_path: /var/log/{{ .Core_name }}/
     var_path_diameter: /etc/{{ .Core_name }}/freeDiameter/
     tls_path: /etc/{{ .Core_name }}/tls/ 
+    diam_lib_dir: /usr/lib
 
+	
     # PLMN that use for most of the components
     plmn:
       mcc: 432
@@ -213,38 +283,55 @@ func Yml(wdir string, vms []VM) {
       hosts:
         sgwc1:
           ansible_host: {{ .SGWC_managementIP }}
+          managementPort: {{ .SGWC_managementPort }}
           ansible_user: mos
           ansible_password: q 
           ansible_become_pass: q
           logger: "{{ .Var_path }}{{ .Inventory_hostname }}.log"
-          gtpc_addr: {{ .SGWC_gtpc }}
-          pfcp_addr: {{ .SGWC_gtpc }}
-          sgwu_pfcp: {{ .SGWC_pfcp }}
+          s11_addr: {{ .SGWC_s11 }}
+          s11_port: {{ .SGWC_s11Port }}
+          s5c_addr: {{ .SGWC_s5c }}
+          s5c_port: {{ .SGWC_s5cPort }}
+          sxa_addr: {{ .SGWU_sxa }}
+          sxa_port: {{ .SGWU_sxaPort }}
 
     sgwu:
       hosts:
         sgwu1:
           ansible_host: {{ .SGWU_managementIP }}
+          managementPort: {{ .SGWU_managementPort }}
           ansible_user: mos
           ansible_password: q 
           ansible_become_pass: q
           logger: "{{ .Var_path }}{{ .Inventory_hostname }}.log"
-          gtpu_addr: {{ .SGWU_gtpu }}
-          pfcp_addr: {{ .SGWU_pfcp }}
+          s5u_addr: {{ .SGWU_s5u }}
+          s5u_port: {{ .SGWU_s5uPort }}
+          sxa_addr: {{ .SGWU_sxa }}
+          sxa_port: {{ .SGWU_sxaPort }}
+          s1u_addr: {{ .SGWU_s1u }}
+          s1u_port: {{ .SGWU_s1uPort }}
 
     upf:
       hosts:
         upf1:
           ansible_host: {{ .UPF_managementIP }}
+          managementPort: {{ .UPF_managementPort }}
           ansible_user: mos
           ansible_password: q 
           ansible_become_pass: q
           logger: "{{ .Var_path }}{{ .Inventory_hostname }}.log"
-          pfcp_addr: {{ .UPF_pfcp }}
-          gtpu_addr: {{ .UPF_gtpu }}
+          sxb_addr: {{ .UPF_sxb }}
+          sxb_port: {{ .UPF_sxbPort }}
+          sxu_addr: {{ .UPF_sxu }}
+          sxu_port: {{ .UPF_sxuPort }}
+          s5u_addr: {{ .UPF_s5u }}
+          s5u_port: {{ .UPF_s5uPort }}
+          sgi_addr: {{ .UPF_sgi }}
+          sgi_port: {{ .UPF_sgiPort }}
           subnet:
               addr: 10.45.0.1/16
-              dnn: internet
+              dev: ogstun
+              apn: internet
           smf_addr: {{ .SMF_managementIP }}
 
     # all diameter peers metagroup
@@ -254,72 +341,94 @@ func Yml(wdir string, vms []VM) {
           hosts:
             mme1:
               ansible_host: {{ .MME_managementIP }}
+              managementPort: {{ .MME_managementPort }}
               ansible_user: mos
               ansible_password: q 
               ansible_become_pass: q
               logger: "{{ .Var_path }}{{ .Inventory_hostname }}.log"
               freeDiameter: "{{ .Diameter_path }}{{ .Inventory_hostname }}.conf"
               tac: 3 
-              gtpc_addr: {{ .MME_gtpc }}
+              s11_addr: {{ .MME_s11 }}
+              s11_port: {{ .MME_s11Port }}
               s1ap: {{ .MME_s1ap }}
+              s1apPort: {{ .MME_s1apPort }}
+              s6a_addr: {{ .MME_s6a }}
+              s6a_port: {{ .MME_s6aPort }}
 
               # freeDiameter variables
+
               diam_realm: {{ .Diam_Realm }}
               diam_Id_host: "{{ .Inventory_hostname }}.{{ .Diam_Realm }}"
-              diam_tcp_port: 1111
-              diam_tcpSec_port: 58162
-              diam_listen_on: "{{ .SGWC_gtpc }}" # temporary
+              diam_Port: 1111
+              diam_SePort: 58162
+              diam_listen_on: "{{ .MME_s6a }}" # temporary
 
         hss:
           hosts:
             hss1:
               ansible_host: {{ .HSS_managementIP }}
+              managementPort: {{ .HSS_managementPort }}
               ansible_user: mos
               ansible_password: q 
               ansible_become_pass: q
               logger: "{{ .Var_path }}{{ .Inventory_hostname }}.log"
               freeDiameter: "{{ .Diameter_path }}{{ .Inventory_hostname }}.conf"
-              db_uri: mongodb://localhost/bbdh
+              db_uri: mongodb://localhost/{{ .Core_name }}
+
+
+              s6a_addr: {{ .HSS_s6a }}
+              s6a_port: {{ .HSS_s6aPort }}
 
               # freeDiameter variables
               diam_realm: {{ .Diam_Realm }}
               diam_Id_host: "{{ .Inventory_hostname }}.{{ .Diam_Realm }}"
-              diam_tcp_port: 38888
-              diam_tcpSec_port: 58162
-              diam_listen_on: "{{ .SGWC_gtpc }}" # temporary
+              diam_Port: 38888
+              diam_SePort: 58162
+              diam_listen_on: "{{ .HSS_s6a }}" # temporary
 
         smf:
           hosts:
             smf1:
               ansible_host: {{ .SMF_managementIP }}
+              managementPort: {{ .SMF_managementPort }}
               ansible_user: mos
               ansible_password: q 
               ansible_become_pass: q
               logger: "{{ .Var_path }}{{ .Inventory_hostname }}.log"
               freeDiameter: "{{ .Diameter_path }}{{ .Inventory_hostname }}.conf"
               sbi_addr: 9877
-              pfcp_addr: {{ .SMF_pfcp }}
-              gtpc_addr: {{ .SMF_gtpc }}
-              gtpu_addr: {{ .SMF_gtpu }}
+              gx_addr: {{ .SMF_gx }}
+              gx_port: {{ .SMF_gxPort }}
+              s5c_addr: {{ .SMF_s5c }}
+              s5c_port: {{ .SMF_s5cPort }}
+              sxb_addr: {{ .SMF_sxb }}
+              sxb_port: {{ .SMF_sxbPort }}
+              sxu_addr: {{ .SMF_sxu }}
+              sxu_port: {{ .SMF_sxuPort }}
               subnet:
                   addr: 10.45.0.1/16
-                  dnn: internet
+                  dev: ogstun
+                  apn: internet
               dns:
                   primary: 8.8.8.8
                   secondary: 8.8.4.4
-              upf_pfcp: {{ .UPF_managementIP }}
+              upf_sxb: {{ .UPF_sxb }}
+              upf_sxbPort: {{ .UPF_sxbPort }}
+              upf_sxu: {{ .UPF_sxu }}
+              upf_sxuPort: {{ .UPF_sxuPort }}
 
               # freeDiameter variables
               diam_realm: {{ .Diam_Realm }}
               diam_Id_host: "{{ .Inventory_hostname }}.{{ .Diam_Realm }}"
-              diam_tcp_port: 38888
-              diam_tcpSec_port: 58162
-              diam_listen_on: "{{ .SGWC_gtpc }}" # temporary
+              diam_Port: 38888
+              diam_SePort: 58162
+              diam_listen_on: "{{ .SMF_gx }}" # temporary
 
         pcrf:
           hosts:
             pcrf1:
               ansible_host: {{ .PCRF_managementIP }}
+              managementPort: {{ .PCRF_managementPort }}
               ansible_user: mos
               ansible_password: q 
               ansible_become_pass: q
@@ -327,12 +436,15 @@ func Yml(wdir string, vms []VM) {
               freeDiameter: "{{ .Diameter_path }}{{ .Inventory_hostname }}.conf"
               db_uri: mongodb://localhost/bbdh
 
+              gx_addr: {{ .PCRF_gx }}
+              gx_port: {{ .PCRF_gxPort }}
+
               # freeDiameter variables
               diam_realm: {{ .Diam_Realm }}
               diam_Id_host: "{{ .Inventory_hostname }}.{{ .Diam_Realm }}"
-              diam_tcp_port: 38888
-              diam_tcpSec_port: 58162
-              diam_listen_on: "{{ .SGWC_gtpc }}" # temporary`
+              diam_Port: 38888
+              diam_SePort: 58162
+              diam_listen_on: "{{ .PCRF_gx }}" # temporary`
 
 	templateTest := template.Must(template.New("yaml").Parse(yamlData))
 
@@ -342,7 +454,7 @@ func Yml(wdir string, vms []VM) {
 		panic(err)
 	}
 
-	os.WriteFile("Inventory.yml", buf.Bytes(), 0644)
+	os.WriteFile("ansible-core-deploy/inventory/Inventory.yml", buf.Bytes(), 0644)
 	fmt.Println(color.Yellow + "\nGenerating Inventory.yml file ..." + color.Reset)
 	time.Sleep(1 * time.Second)
 	fmt.Print(color.Green + "Inventory.yml generated in the current path\n\n" + color.Reset)
