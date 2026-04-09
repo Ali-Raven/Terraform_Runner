@@ -41,6 +41,7 @@ var (
 	smf_managementPort  int = ssh_defaultPort
 	smf_gx              string
 	smf_gxPort          int = 2123
+	gx_secPort          int = 5868
 	smf_s5c             string
 	smf_s5cPort         int = 8805
 	smf_sxb             string
@@ -53,6 +54,7 @@ var (
 	mme_s1apPort        int = 36412
 	mme_s6a             string
 	mme_s6aPort         int = 2221
+	s6a_secPort         int = 5868
 	mme_managementIP    string
 	mme_managementPort  int = ssh_defaultPort
 	hss_managementIP    string
@@ -202,6 +204,8 @@ func Yml(wdir string, vms []VM) {
 		Inventory_hostname  string
 		Diameter_path       string
 		Diam_Realm          string
+		Gx_secPort          int
+		S6a_secPort         int
 	}{sgwc_managementIP,
 		sgwc_managementPort,
 		sgwc_s11,
@@ -260,6 +264,8 @@ func Yml(wdir string, vms []VM) {
 		inventory_hostname,
 		var_path_diameter,
 		diam_realm,
+		gx_secPort,
+		s6a_secPort,
 	}
 
 	yamlData := `all:
@@ -354,13 +360,12 @@ func Yml(wdir string, vms []VM) {
               s1apPort: {{ .MME_s1apPort }}
               s6a_addr: {{ .MME_s6a }}
               s6a_port: {{ .MME_s6aPort }}
+              s6a_secport: {{ .S6a_secPort }}
 
               # freeDiameter variables
 
               diam_realm: {{ .Diam_Realm }}
               diam_Id_host: "{{ .Inventory_hostname }}.{{ .Diam_Realm }}"
-              diam_Port: 1111
-              diam_SePort: 58162
               diam_listen_on: "{{ .MME_s6a }}" # temporary
 
         hss:
@@ -378,12 +383,11 @@ func Yml(wdir string, vms []VM) {
 
               s6a_addr: {{ .HSS_s6a }}
               s6a_port: {{ .HSS_s6aPort }}
+              s6a_secport: {{ .S6a_secPort }}
 
               # freeDiameter variables
               diam_realm: {{ .Diam_Realm }}
               diam_Id_host: "{{ .Inventory_hostname }}.{{ .Diam_Realm }}"
-              diam_Port: 38888
-              diam_SePort: 58162
               diam_listen_on: "{{ .HSS_s6a }}" # temporary
 
         smf:
@@ -399,6 +403,7 @@ func Yml(wdir string, vms []VM) {
               sbi_addr: 9877
               gx_addr: {{ .SMF_gx }}
               gx_port: {{ .SMF_gxPort }}
+              gx_secport: {{ .Gx_secPort }}
               s5c_addr: {{ .SMF_s5c }}
               s5c_port: {{ .SMF_s5cPort }}
               sxb_addr: {{ .SMF_sxb }}
@@ -420,8 +425,6 @@ func Yml(wdir string, vms []VM) {
               # freeDiameter variables
               diam_realm: {{ .Diam_Realm }}
               diam_Id_host: "{{ .Inventory_hostname }}.{{ .Diam_Realm }}"
-              diam_Port: 38888
-              diam_SePort: 58162
               diam_listen_on: "{{ .SMF_gx }}" # temporary
 
         pcrf:
@@ -438,7 +441,7 @@ func Yml(wdir string, vms []VM) {
 
               gx_addr: {{ .PCRF_gx }}
               gx_port: {{ .PCRF_gxPort }}
-
+              gx_secport: {{ .Gx_secPort }}
               # freeDiameter variables
               diam_realm: {{ .Diam_Realm }}
               diam_Id_host: "{{ .Inventory_hostname }}.{{ .Diam_Realm }}"
