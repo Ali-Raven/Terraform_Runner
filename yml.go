@@ -366,7 +366,6 @@ func Yml(wdir string, vms []VM) {
 
               diam_realm: {{ .Diam_Realm }}
               diam_Id_host: "{{ .Inventory_hostname }}.{{ .Diam_Realm }}"
-              diam_listen_on: "{{ .MME_s6a }}" # temporary
 
         hss:
           hosts:
@@ -388,7 +387,6 @@ func Yml(wdir string, vms []VM) {
               # freeDiameter variables
               diam_realm: {{ .Diam_Realm }}
               diam_Id_host: "{{ .Inventory_hostname }}.{{ .Diam_Realm }}"
-              diam_listen_on: "{{ .HSS_s6a }}" # temporary
 
         smf:
           hosts:
@@ -425,7 +423,6 @@ func Yml(wdir string, vms []VM) {
               # freeDiameter variables
               diam_realm: {{ .Diam_Realm }}
               diam_Id_host: "{{ .Inventory_hostname }}.{{ .Diam_Realm }}"
-              diam_listen_on: "{{ .SMF_gx }}" # temporary
 
         pcrf:
           hosts:
@@ -446,8 +443,7 @@ func Yml(wdir string, vms []VM) {
               diam_realm: {{ .Diam_Realm }}
               diam_Id_host: "{{ .Inventory_hostname }}.{{ .Diam_Realm }}"
               diam_Port: 38888
-              diam_SePort: 58162
-              diam_listen_on: "{{ .PCRF_gx }}" # temporary`
+              diam_SePort: 58162`
 
 	templateTest := template.Must(template.New("yaml").Parse(yamlData))
 
@@ -457,7 +453,8 @@ func Yml(wdir string, vms []VM) {
 		panic(err)
 	}
 
-	os.WriteFile("ansible-core-deploy/inventory/Inventory.yml", buf.Bytes(), 0644)
+	inventoryPath := "ansible-core-deploy/inventory/"
+	os.WriteFile(inventoryPath + "Inventory.yml", buf.Bytes(), 0644)
 	fmt.Println(color.Yellow + "\nGenerating Inventory.yml file ..." + color.Reset)
 	time.Sleep(1 * time.Second)
 	fmt.Print(color.Green + "Inventory.yml generated in the current path\n\n" + color.Reset)
