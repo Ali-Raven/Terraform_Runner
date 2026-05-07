@@ -3,12 +3,12 @@ package main
 import (
 	"bufio"
 	"fmt"
-	"github.com/TwiN/go-color"
-	"github.com/common-nighthawk/go-figure"
 	"log"
 	"os"
 	"os/exec"
 	"time"
+	"github.com/TwiN/go-color"
+	"github.com/common-nighthawk/go-figure"
 )
 
 func Cyborg(hostname, wdir string) {
@@ -54,12 +54,15 @@ func Running_Ansible(hostname, wdir string, reader *bufio.Reader) {
 	time.Sleep(1 * time.Second)
 
 	// getting current directory
-	currenDir := CurrentDir()
+	currenDir, err := CurrentDir()
+	if err != nil {
+		panic(err)
+	}
 
 	// installing LTE core ...
 	fmt.Println(color.Yellow + "Starting installing LTE core ..." + color.Reset)
 	time.Sleep(1 * time.Second)
-	cmd := exec.Command("ansible-playbook", "-i", "inventory/hosts", "playbooks/install-core-new.yml")
+	cmd := exec.Command("ansible-playbook", "playbooks/install-core-new.yml")
 	cmd.Dir = currenDir + wdir
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
@@ -69,9 +72,9 @@ func Running_Ansible(hostname, wdir string, reader *bufio.Reader) {
 	fmt.Println(color.Green + "Installing core is Successfully Completed." + color.Reset)
 
 	// configuring Firewalld
-	fmt.Println(color.Yellow + "\nStarting Configuring Firewalld ...")
+	fmt.Println(color.Yellow + "\nStarting Configuring Firewalld ..." + color.Reset)
 	time.Sleep(1 * time.Second)
-	cmd2 := exec.Command("ansible-playbook", "playbooks/config_firewalld.yaml")
+	cmd2 := exec.Command("ansible-playbook", "playbooks/config-firewalld.yaml")
 	cmd2.Dir = currenDir + wdir
 	cmd2.Stdout = os.Stdout
 	cmd2.Stderr = os.Stderr
@@ -84,7 +87,7 @@ func Running_Ansible(hostname, wdir string, reader *bufio.Reader) {
 	// Configuring LTE core
 	fmt.Println(color.Yellow + "\nStarting Configuring LTE core ..." + color.Reset)
 	time.Sleep(1 * time.Second)
-	cmd3 := exec.Command("ansible-playbook", "playbooks/config_core.yaml")
+	cmd3 := exec.Command("ansible-playbook", "playbooks/config_core.yaml", "-K")
 	cmd3.Dir = currenDir + wdir
 	cmd3.Stdout = os.Stdout
 	cmd3.Stderr = os.Stderr
@@ -100,9 +103,17 @@ func Running_Ansible(hostname, wdir string, reader *bufio.Reader) {
 }
 
 // =============================================================================================== Helper functions ==============================================================================================
-func CurrentDir() string {
-	currentDir, _ := os.Getwd()
-	return currentDir
+func CurrentDir() ( ـ string, err error) {
+	defer func() {
+		if err != nil {
+			err = fmt.Errorf("Error getting Currnet Dir : %w" , err)
+		}
+	}()
+	currentDir, err := os.Getwd()
+	if err != nil {
+		return " ", err
+	}
+	return currentDir, nil
 }
 
 // =============================================================================================== Helper functions (END) ==============================================================================================

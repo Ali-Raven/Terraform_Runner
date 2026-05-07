@@ -45,7 +45,7 @@ var (
 	smf_s5c             string
 	smf_s5cPort         int = 8805
 	smf_sxb             string
-	smf_sxbPort         int = 2152
+	smf_sxbPort         int = 2153
 	smf_sxu             string
 	smf_sxuPort         int = 8806
 	mme_s11             string
@@ -71,6 +71,8 @@ var (
 	inventory_hostname  string
 	diam_realm          string
 	flagErr             bool
+	diam_groupNames     string
+	non_diam_groupNames string
 )
 
 func Yml(wdir string, vms []VM) {
@@ -98,52 +100,130 @@ func Yml(wdir string, vms []VM) {
 
 	time.Sleep(1 * time.Second)
 
+	// mapping MME networks
+	mmeNetworks := make(map[string]string)
+	for _ , netw := range vms[0].Networks {
+		mmeNetworks[netw.Name] = netw.IP
+	}
+	
+	// mapping SGWC networks
+	sgwcNetworks := make(map[string]string)
+	for _ , netw := range vms[3].Networks {
+		sgwcNetworks[netw.Name] = netw.IP
+	}
+
+	// mapping SGWU networkd
+	sgwuNetworks := make(map[string]string)
+	for _ , netw := range vms[4].Networks {
+		sgwuNetworks[netw.Name] = netw.IP
+	}
+
+	// mapping SMF networkd
+	smfNetworks := make(map[string]string)
+	for _ , netw := range vms[5].Networks {
+		smfNetworks[netw.Name] = netw.IP
+	}
+
+	// mapping UPF networkd
+	upfNetworks := make(map[string]string)
+	for _ , netw := range vms[6].Networks {
+		upfNetworks[netw.Name] = netw.IP
+	}
+
+	// mapping HSS networkd
+	hssNetworks := make(map[string]string)
+	for _ , netw := range vms[1].Networks {
+		hssNetworks[netw.Name] = netw.IP
+	}
+
+	// mapping PCRF networkd
+	pcrfNetworks := make(map[string]string)
+	for _ , netw := range vms[2].Networks {
+		pcrfNetworks[netw.Name] = netw.IP
+	}
+	// fmt.Println(newVarmmes1ap)
+	// fmt.Println(news11)
 	// Assigning MME vars
-	mme_managementIP = vms[0].Networks[0].IP
-	mme_s1ap = vms[0].Networks[1].IP
-	mme_s6a = vms[0].Networks[2].IP
-	mme_s11 = vms[0].Networks[3].IP
+	// mme_managementIP = vms[0].Networks[0].IP
+	// mme_s1ap = vms[0].Networks[1].IP
+	// mme_s6a = vms[0].Networks[2].IP
+	// mme_s11 = vms[0].Networks[3].IP
+
+	mme_managementIP = mmeNetworks["VM Network"]
+	mme_s1ap = mmeNetworks["s1ap"]
+	mme_s6a = mmeNetworks["s6a"]
+	mme_s11 = mmeNetworks["s11"]
 
 	// Assigning SGW-C
-	sgwc_managementIP = vms[3].Networks[0].IP
-	sgwc_s11 = vms[3].Networks[1].IP
-	sgwc_sxa = vms[3].Networks[2].IP
-	sgwc_s5c = vms[3].Networks[3].IP
+	// sgwc_managementIP = vms[3].Networks[0].IP
+	// sgwc_s11 = vms[3].Networks[1].IP
+	// sgwc_sxa = vms[3].Networks[2].IP
+	// sgwc_s5c = vms[3].Networks[3].IP
+
+	sgwc_managementIP = sgwcNetworks["VM Network"]
+	sgwc_s11 = sgwcNetworks["s11"]
+	sgwc_sxa = sgwcNetworks["sxa"]
+	sgwc_s5c = sgwcNetworks["s5c"]
 
 	// Assigning SGW-U
-	sgwu_managementIP = vms[4].Networks[0].IP
-	sgwu_sxa = vms[4].Networks[1].IP
-	sgwu_s5u = vms[4].Networks[2].IP
-	sgwu_s1u = vms[4].Networks[3].IP
+	// sgwu_managementIP = vms[4].Networks[0].IP
+	// sgwu_sxa = vms[4].Networks[1].IP
+	// sgwu_s5u = vms[4].Networks[2].IP
+	// sgwu_s1u = vms[4].Networks[3].IP
+
+	sgwu_managementIP = sgwuNetworks["VM Network"]
+	sgwu_sxa = sgwuNetworks["sxa"]
+	sgwu_s5u = sgwuNetworks["s5u"]
+	sgwu_s1u = sgwuNetworks["s1-u"]
 
 	// Assigning SMF
-	smf_managementIP = vms[5].Networks[0].IP
-	smf_gx = vms[5].Networks[1].IP
-	smf_s5c = vms[5].Networks[2].IP
-	smf_sxb = vms[5].Networks[3].IP
-	smf_sxu = vms[5].Networks[4].IP
+	// smf_managementIP = vms[5].Networks[0].IP
+	// smf_gx = vms[5].Networks[1].IP
+	// smf_s5c = vms[5].Networks[2].IP
+	// smf_sxb = vms[5].Networks[3].IP
+	// smf_sxu = vms[5].Networks[4].IP
+
+	smf_managementIP = smfNetworks["VM Network"]
+	smf_gx = smfNetworks["gx"]
+	smf_s5c = smfNetworks["s5c"]
+	smf_sxb = smfNetworks["sxb"]
+	smf_sxu = smfNetworks["sxu"]
 
 	// Assigning UPF
-	upf_managemetIP = vms[6].Networks[0].IP
-	upf_sxb = vms[6].Networks[1].IP
-	upf_sxu = vms[6].Networks[2].IP
-	upf_s5u = vms[6].Networks[3].IP
-	upf_SGI = vms[6].Networks[4].IP
+	// upf_managemetIP = vms[6].Networks[0].IP
+	// upf_sxb = vms[6].Networks[1].IP
+	// upf_sxu = vms[6].Networks[2].IP
+	// upf_s5u = vms[6].Networks[3].IP
+	// upf_SGI = vms[6].Networks[4].IP
+
+	upf_managemetIP = upfNetworks["VM Network"]
+	upf_sxb = upfNetworks["sxb"]
+	upf_sxu = upfNetworks["sxu"]
+	upf_s5u = upfNetworks["s5u"]
+	upf_SGI = upfNetworks["SGI"]
 
 	// Assigning HSS
-	hss_managementIP = vms[1].Networks[0].IP
-	hss_s6a = vms[1].Networks[1].IP
+	// hss_managementIP = vms[1].Networks[0].IP
+	// hss_s6a = vms[1].Networks[1].IP
+
+	hss_managementIP = hssNetworks["VM Network"]
+	hss_s6a = hssNetworks["s6a"]
 
 	// Assigning PCRF
-	pcrf_managementIP = vms[2].Networks[0].IP
-	pcrf_gx = vms[2].Networks[1].IP
+	// pcrf_managementIP = vms[2].Networks[0].IP
+	// pcrf_gx = vms[2].Networks[1].IP
+
+	pcrf_managementIP = pcrfNetworks["VM Network"]
+	pcrf_gx = pcrfNetworks["gx"]
 
 	core_name = "{{ core_name }}"
 	var_path = "/var/log/" + core_name + "/"
 	tls_path = "/etc/" + core_name + "/tls/"
 	inventory_hostname = "{{ inventory_hostname }}"
+	diam_groupNames = "{{ group_names[1] }}"
+	non_diam_groupNames = "{{ group_names[0] }}"
 	var_path_diameter := "/etc/" + core_name + "/freeDiameter/"
-	diam_realm = "epc.mnc0{{ plmn.mnc }}.mcc{{ plmn.mcc }}.3gppnetwork.org"
+	diam_realm = "epc.mnc{{ plmn.mnc }}.mcc{{ plmn.mcc }}.3gppnetwork.org"
 
 	data := struct {
 		SGWC_managementIP   string
@@ -202,6 +282,8 @@ func Yml(wdir string, vms []VM) {
 		Var_path            string
 		Tls_path            string
 		Inventory_hostname  string
+		Diam_groupNames     string
+		Non_diam_groupNames string
 		Diameter_path       string
 		Diam_Realm          string
 		Gx_secPort          int
@@ -262,6 +344,8 @@ func Yml(wdir string, vms []VM) {
 		var_path,
 		tls_path,
 		inventory_hostname,
+		diam_groupNames,
+		non_diam_groupNames,
 		var_path_diameter,
 		diam_realm,
 		gx_secPort,
@@ -277,12 +361,11 @@ func Yml(wdir string, vms []VM) {
     var_path_diameter: /etc/{{ .Core_name }}/freeDiameter/
     tls_path: /etc/{{ .Core_name }}/tls/ 
     diam_lib_dir: /usr/lib
-
-	
     # PLMN that use for most of the components
     plmn:
       mcc: 432
-      mnc: 085
+      mnc: 080
+    diam_realm: {{ .Diam_Realm }}
 
   children:
     sgwc:
@@ -293,13 +376,13 @@ func Yml(wdir string, vms []VM) {
           ansible_user: mos
           ansible_password: q 
           ansible_become_pass: q
-          logger: "{{ .Var_path }}{{ .Inventory_hostname }}.log"
+          logger: "{{ .Var_path }}{{ .Non_diam_groupNames }}.log"
           s11_addr: {{ .SGWC_s11 }}
           s11_port: {{ .SGWC_s11Port }}
           s5c_addr: {{ .SGWC_s5c }}
           s5c_port: {{ .SGWC_s5cPort }}
-          sxa_addr: {{ .SGWU_sxa }}
-          sxa_port: {{ .SGWU_sxaPort }}
+          sxa_addr: {{ .SGWC_sxa }}
+          sxa_port: {{ .SGWC_sxaPort }}
 
     sgwu:
       hosts:
@@ -309,7 +392,7 @@ func Yml(wdir string, vms []VM) {
           ansible_user: mos
           ansible_password: q 
           ansible_become_pass: q
-          logger: "{{ .Var_path }}{{ .Inventory_hostname }}.log"
+          logger: "{{ .Var_path }}{{ .Non_diam_groupNames }}.log"
           s5u_addr: {{ .SGWU_s5u }}
           s5u_port: {{ .SGWU_s5uPort }}
           sxa_addr: {{ .SGWU_sxa }}
@@ -325,7 +408,7 @@ func Yml(wdir string, vms []VM) {
           ansible_user: mos
           ansible_password: q 
           ansible_become_pass: q
-          logger: "{{ .Var_path }}{{ .Inventory_hostname }}.log"
+          logger: "{{ .Var_path }}{{ .Non_diam_groupNames }}.log"
           sxb_addr: {{ .UPF_sxb }}
           sxb_port: {{ .UPF_sxbPort }}
           sxu_addr: {{ .UPF_sxu }}
@@ -351,20 +434,18 @@ func Yml(wdir string, vms []VM) {
               ansible_user: mos
               ansible_password: q 
               ansible_become_pass: q
-              logger: "{{ .Var_path }}{{ .Inventory_hostname }}.log"
-              freeDiameter: "{{ .Diameter_path }}{{ .Inventory_hostname }}.conf"
-              tac: 3 
+              logger: "{{ .Var_path }}{{ .Diam_groupNames }}.log"
+              freeDiameter: "{{ .Diameter_path }}{{ .Diam_groupNames }}.conf"
+              tac: 1 
               s11_addr: {{ .MME_s11 }}
               s11_port: {{ .MME_s11Port }}
-              s1ap: {{ .MME_s1ap }}
-              s1apPort: {{ .MME_s1apPort }}
+              s1ap_addr: {{ .MME_s1ap }}
+              s1ap_port: {{ .MME_s1apPort }}
               s6a_addr: {{ .MME_s6a }}
               s6a_port: {{ .MME_s6aPort }}
               s6a_secport: {{ .S6a_secPort }}
 
               # freeDiameter variables
-
-              diam_realm: {{ .Diam_Realm }}
               diam_Id_host: "{{ .Inventory_hostname }}.{{ .Diam_Realm }}"
 
         hss:
@@ -375,8 +456,8 @@ func Yml(wdir string, vms []VM) {
               ansible_user: mos
               ansible_password: q 
               ansible_become_pass: q
-              logger: "{{ .Var_path }}{{ .Inventory_hostname }}.log"
-              freeDiameter: "{{ .Diameter_path }}{{ .Inventory_hostname }}.conf"
+              logger: "{{ .Var_path }}{{ .Diam_groupNames }}.log"
+              freeDiameter: "{{ .Diameter_path }}{{ .Diam_groupNames }}.conf"
               db_uri: mongodb://localhost/{{ .Core_name }}
 
 
@@ -385,7 +466,6 @@ func Yml(wdir string, vms []VM) {
               s6a_secport: {{ .S6a_secPort }}
 
               # freeDiameter variables
-              diam_realm: {{ .Diam_Realm }}
               diam_Id_host: "{{ .Inventory_hostname }}.{{ .Diam_Realm }}"
 
         smf:
@@ -396,8 +476,8 @@ func Yml(wdir string, vms []VM) {
               ansible_user: mos
               ansible_password: q 
               ansible_become_pass: q
-              logger: "{{ .Var_path }}{{ .Inventory_hostname }}.log"
-              freeDiameter: "{{ .Diameter_path }}{{ .Inventory_hostname }}.conf"
+              logger: "{{ .Var_path }}{{ .Diam_groupNames }}.log"
+              freeDiameter: "{{ .Diameter_path }}{{ .Diam_groupNames }}.conf"
               sbi_addr: 9877
               gx_addr: {{ .SMF_gx }}
               gx_port: {{ .SMF_gxPort }}
@@ -415,13 +495,8 @@ func Yml(wdir string, vms []VM) {
               dns:
                   primary: 8.8.8.8
                   secondary: 8.8.4.4
-              upf_sxb: {{ .UPF_sxb }}
-              upf_sxbPort: {{ .UPF_sxbPort }}
-              upf_sxu: {{ .UPF_sxu }}
-              upf_sxuPort: {{ .UPF_sxuPort }}
 
               # freeDiameter variables
-              diam_realm: {{ .Diam_Realm }}
               diam_Id_host: "{{ .Inventory_hostname }}.{{ .Diam_Realm }}"
 
         pcrf:
@@ -432,18 +507,17 @@ func Yml(wdir string, vms []VM) {
               ansible_user: mos
               ansible_password: q 
               ansible_become_pass: q
-              logger: "{{ .Var_path }}{{ .Inventory_hostname }}.log"
-              freeDiameter: "{{ .Diameter_path }}{{ .Inventory_hostname }}.conf"
+              logger: "{{ .Var_path }}{{ .Diam_groupNames }}.log"
+              freeDiameter: "{{ .Diameter_path }}{{ .Diam_groupNames }}.conf"
               db_uri: mongodb://localhost/bbdh
 
               gx_addr: {{ .PCRF_gx }}
               gx_port: {{ .PCRF_gxPort }}
               gx_secport: {{ .Gx_secPort }}
+
               # freeDiameter variables
-              diam_realm: {{ .Diam_Realm }}
               diam_Id_host: "{{ .Inventory_hostname }}.{{ .Diam_Realm }}"
-              diam_Port: 38888
-              diam_SePort: 58162`
+               `
 
 	templateTest := template.Must(template.New("yaml").Parse(yamlData))
 
@@ -453,9 +527,9 @@ func Yml(wdir string, vms []VM) {
 		panic(err)
 	}
 
-	inventoryPath := "ansible-core-deploy/inventory/"
-	os.WriteFile(inventoryPath + "Inventory.yml", buf.Bytes(), 0644)
-	fmt.Println(color.Yellow + "\nGenerating Inventory.yml file ..." + color.Reset)
+	inventoryPath , fileName := "ansible-core-deploy/inventory/" , "main.yml"
+	os.WriteFile(inventoryPath + fileName , buf.Bytes() , 0644)
+	fmt.Printf("\n%sGenerating %s  file ...%s"  , color.Yellow , fileName, color.Reset )
 	time.Sleep(1 * time.Second)
-	fmt.Print(color.Green + "Inventory.yml generated in the current path\n\n" + color.Reset)
+	fmt.Printf("\n%s%s generated in the current path%s\n\n" , color.Green , fileName , color.Reset)
 }
