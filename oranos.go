@@ -12,11 +12,6 @@ import (
 func Oranos_configure(wdir string) {
 	var builder strings.Builder
 
-	//#####################################
-	//TEST
-	// filename := "terraform.tfvars"
-	//#####################################
-
 	currentDir, err := os.Getwd()
 	if err != nil {
 		panic(err)

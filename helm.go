@@ -13,6 +13,8 @@ import (
 
 	"github.com/TwiN/go-color"
 	"github.com/common-nighthawk/go-figure"
+	"github.com/terraform_runner/helper"
+	"github.com/terraform_runner/servers"
 )
 
 // initializing global variables
@@ -65,7 +67,7 @@ func Helm(hostname, wdir string) {
 		fmt.Println(color.Yellow + "\nWarning : choose one of the above options ..." + color.Reset)
 		fmt.Println(color.Yellow + "Returning to menu ..." + color.Reset)
 		time.Sleep(1 * time.Second)
-		Helm(hostname , wdir)
+		Helm(hostname, wdir)
 		// fmt.Println("Options : ")
 		// fmt.Println("1. ESXI install & config\n2. vCenter installation")
 	}
@@ -79,7 +81,7 @@ func ESXI_setup(hostname, wdir string, reader *bufio.Reader) {
 	fmt.Println(color.Yellow + "Setting up ESXI Product ..." + color.Reset)
 	time.Sleep(1 * time.Second)
 	fmt.Println(color.Yellow + "Fetching list of Servers for installing ESXI products ..." + color.Reset)
-	servers := fetchServers()
+	servers := servers.FetchServers()
 	fmt.Println(color.Green + "\nAvailable Servers:" + color.Reset)
 	for i, serverName := range servers {
 		fmt.Printf("%d. %s\n", i+1, serverName)
@@ -277,11 +279,11 @@ func MinimalInputEsxi(reader *bufio.Reader, wdir string) {
 	fmt.Println(color.Blue + "\nUsing vCenter_setup" + color.Reset)
 	fmt.Println(color.Yellow + "\n\nYou have Existing ESXI host " + color.Reset)
 	fmt.Println(color.Yellow + "Enter you vCenter configs : " + color.Reset)
-	usrHostname = readRequired(reader, "\nEnter ESXI Hostname: ")
-	usrIP = readRequired(reader, "Enter ESXI IP Address: ")
-	usrNetmask = readRequired(reader, "Enter Netmask: ")
-	usrGateway = readRequired(reader, "Enter ESXI Gateway: ")
-	usrVlan = readRequired(reader, "Enter ESXI Management Network Vlan: ")
+	usrHostname = helper.ReadRequired(reader, "\nEnter ESXI Hostname: ")
+	usrIP = helper.ReadRequired(reader, "Enter ESXI IP Address: ")
+	usrNetmask = helper.ReadRequired(reader, "Enter Netmask: ")
+	usrGateway = helper.ReadRequired(reader, "Enter ESXI Gateway: ")
+	usrVlan = helper.ReadRequired(reader, "Enter ESXI Management Network Vlan: ")
 
 	fmt.Println(color.Green + "\nGetting Esxi Parameters Successfully Completed " + color.Reset)
 	time.Sleep(1 * time.Second)
@@ -292,7 +294,7 @@ func MinimalInputEsxi(reader *bufio.Reader, wdir string) {
 
 // ==================================================================================== vCenter setup ==========================================================================================
 func Vcenter_setup(wdir string, reader *bufio.Reader) {
-	
+
 	fmt.Println(color.Yellow + "Setting up vCenter Product ..." + color.Reset)
 	fmt.Println()
 	time.Sleep(1 * time.Second)
@@ -308,7 +310,7 @@ func Vcenter_setup(wdir string, reader *bufio.Reader) {
 
 	w.Flush()
 
-	deployment_options_vCenter = readRequired(reader, "\nEnter Deployment Options : ")
+	deployment_options_vCenter = helper.ReadRequired(reader, "\nEnter Deployment Options : ")
 	// switch for checking the answer of user for deployment options
 	switch deployment_options_vCenter {
 	case "1":
@@ -328,12 +330,12 @@ func Vcenter_setup(wdir string, reader *bufio.Reader) {
 	}
 	// ---------------------end of switch---------------------------------
 
-	usrvCenterIp = readRequired(reader, "Enter vCenter IP : ")
-	prefix_netmask = readRequired(reader, "Enter Netmask (e.g. 24) : ")
-	vCenter_gateway = readRequired(reader, "Enter vCenter Gateway : ")
-	system_name_vCenter = readRequired(reader, "Enter System name : ")
-	vCenter_management_pass = readRequired(reader, "Enter vCenter Management Password : ")
-	vCenter_login_pass = readRequired(reader, "Enter vCenter login Password : ")
+	usrvCenterIp = helper.ReadRequired(reader, "Enter vCenter IP : ")
+	prefix_netmask = helper.ReadRequired(reader, "Enter Netmask (e.g. 24) : ")
+	vCenter_gateway = helper.ReadRequired(reader, "Enter vCenter Gateway : ")
+	system_name_vCenter = helper.ReadRequired(reader, "Enter System name : ")
+	vCenter_management_pass = helper.ReadRequired(reader, "Enter vCenter Management Password : ")
+	vCenter_login_pass = helper.ReadRequired(reader, "Enter vCenter login Password : ")
 
 	JsonData := map[string]any{
 		"__version":  "2.13.0",

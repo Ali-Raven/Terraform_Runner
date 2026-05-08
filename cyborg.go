@@ -7,8 +7,10 @@ import (
 	"os"
 	"os/exec"
 	"time"
+
 	"github.com/TwiN/go-color"
 	"github.com/common-nighthawk/go-figure"
+	"github.com/terraform_runner/helper"
 )
 
 func Cyborg(hostname, wdir string) {
@@ -22,7 +24,7 @@ func Cyborg(hostname, wdir string) {
 
 	fmt.Printf("\nOptions : \n\t\n\t1.Enter Configuration =>\t%sEnter Ansible Configuration%s %s(Developed in later versions)%s \n\t------------\t\n\t2.Launch Ansible =>\t\t%sExecuting Ansbile on the VMs%s \n\t------------\n\t3.Exit", color.Yellow, color.Reset, color.Cyan, color.Reset, color.Yellow, color.Reset)
 	fmt.Print()
-	usrChoice := readRequired(reader, "\n\nchoose : ")
+	usrChoice := helper.ReadRequired(reader, "\n\nchoose : ")
 
 	switch usrChoice {
 	case "1":
@@ -103,10 +105,10 @@ func Running_Ansible(hostname, wdir string, reader *bufio.Reader) {
 }
 
 // =============================================================================================== Helper functions ==============================================================================================
-func CurrentDir() ( ـ string, err error) {
+func CurrentDir() (ـ string, err error) {
 	defer func() {
 		if err != nil {
-			err = fmt.Errorf("Error getting Currnet Dir : %w" , err)
+			err = fmt.Errorf("Error getting Currnet Dir : %w", err)
 		}
 	}()
 	currentDir, err := os.Getwd()
