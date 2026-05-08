@@ -4,13 +4,11 @@ import (
 	"bufio"
 	"encoding/json"
 	"fmt"
+	"github.com/TwiN/go-color"
+	"github.com/terraform_runner/helper"
 	"os"
-	"strconv"
 	"strings"
 	"time"
-
-	"github.com/TwiN/go-color"
-	
 )
 
 var (
@@ -90,11 +88,7 @@ func createNewVMs(reader *bufio.Reader, wdir string) {
 		time.Sleep(1 * time.Second)
 		fmt.Print("\n\u2731 How many VMs you want to create ? ")
 
-		// numVMstr, _ := reader.ReadString('\n')
-		// numVMstr = strings.TrimSpace(numVMstr)
-		// numVMcount := atoi(numVMstr)
-
-		numVMcount, err := readInt(reader)
+		numVMcount, err := helper.ReadInt(reader)
 		if err != nil {
 			fmt.Println(err)
 			fmt.Println(color.Red + "Enter Numbers Please." + color.Reset)
@@ -218,8 +212,8 @@ func collectVM(reader *bufio.Reader) VM {
 	}
 	vm := VM{
 		Name:       strings.TrimSpace(name),
-		NumCPU:     atoi(numCPUstr),
-		MemoryGB:   atoi(memoryGBstr),
+		NumCPU:     helper.Atoi(numCPUstr),
+		MemoryGB:   helper.Atoi(memoryGBstr),
 		Gateway:    strings.TrimSpace(gateway),
 		DNSservers: dns,
 	}
@@ -242,7 +236,7 @@ func collectVM(reader *bufio.Reader) VM {
 		vm.Networks = append(vm.Networks, Network{
 			Name:    strings.TrimSpace(ManagementNetworkName),
 			IP:      strings.TrimSpace(ManagementNetworkIP),
-			Netmask: atoi(ManagementNetworkNetmask),
+			Netmask: helper.Atoi(ManagementNetworkNetmask),
 		})
 	} else {
 		ManagementNetworkIP = readRequired(reader, "Enter Management Network IP : ")
@@ -251,7 +245,7 @@ func collectVM(reader *bufio.Reader) VM {
 		vm.Networks = append(vm.Networks, Network{
 			Name:    strings.TrimSpace(ManagementNetworkName),
 			IP:      strings.TrimSpace(ManagementNetworkIP),
-			Netmask: atoi(ManagementNetworkNetmask),
+			Netmask: helper.Atoi(ManagementNetworkNetmask),
 		})
 	}
 
@@ -276,7 +270,7 @@ func readAdditionalNetworks(reader *bufio.Reader) []Network {
 	var vmNetworks []Network
 	fmt.Print(color.Yellow + "How many Networks do you want for your VMs ? " + color.Reset)
 	numNetworkStr, _ := reader.ReadString('\n')
-	netCount := atoi(numNetworkStr)
+	netCount := helper.Atoi(numNetworkStr)
 
 	for j := 0; j < netCount; j++ {
 		fmt.Printf(color.Yellow+"\n--- Network %d ---\n"+color.Reset, j+1)
@@ -288,51 +282,13 @@ func readAdditionalNetworks(reader *bufio.Reader) []Network {
 		vmNetworks = append(vmNetworks, Network{
 			Name:    strings.TrimSpace(additionalNetwork_name),
 			IP:      strings.TrimSpace(additionalNetwork_ip),
-			Netmask: atoi(additionalNetwork_netmask),
+			Netmask: helper.Atoi(additionalNetwork_netmask),
 		})
 	}
 	return vmNetworks
 }
 
 // =========================================================================== Creating New VMs (END) ==========================================================================
-
-// =========================================================================== Helper Functions ==========================================================================
-// for simple string to int conversion
-func atoi(s string) int {
-	i, _ := strconv.Atoi(strings.TrimSpace(s))
-	return i
-}
-
-func readLine(reader *bufio.Reader) string {
-	s, _ := reader.ReadString('\n')
-	return strings.TrimSpace(s)
-}
-
-func readInt(reader *bufio.Reader) (int, error) {
-	var input []byte
-	for {
-		b, err := reader.ReadByte()
-		if err != nil {
-			return 0, err
-		}
-
-		if b == '\n' || b == ' ' || b == '\r' {
-			break
-		}
-		input = append(input, b)
-	}
-
-	// converting bytes to strings => then to integer
-	numStr := string(input)
-	num, err := strconv.Atoi(strings.TrimSpace(numStr))
-	if err != nil {
-		return 0, fmt.Errorf("%sinvalid Integer (You enter => %s) %s", color.Red, numStr, color.Reset)
-	}
-
-	return num, nil
-}
-
-// =========================================================================== Helper Functions (END) ==========================================================================
 
 // =========================================================================== Modify VMs ==========================================================================
 func ModifyVMs(reader *bufio.Reader, wdir string) {
@@ -351,7 +307,7 @@ func ModifyVMs(reader *bufio.Reader, wdir string) {
 	fmt.Printf("\nEnter the ID of the VM you want to modify :  %s(enter 0 to Return to menu )%s => ", color.Yellow, color.Reset)
 	vmID, _ := reader.ReadString('\n')
 	vmID = strings.TrimSpace(vmID)
-	vmIDindex := atoi(vmID) - 1
+	vmIDindex := helper.Atoi(vmID) - 1
 
 	// checking VM index ID is valid or not
 	if vmIDindex >= len(tfvars.VMs) {
@@ -410,7 +366,7 @@ func readNetworks(reader *bufio.Reader, network []Network) []Network {
 		}
 
 		fmt.Print("\nwhich one of Network you want to Delete ? (Enter ID) ")
-		id := atoi(readLine(reader)) - 1
+		id := helper.Atoi(helper.ReadLine(reader)) - 1
 
 		network = append(network[:id], network[id+1:]...)
 		fmt.Println(color.Green + "Network is removed Successfully" + color.Reset)
@@ -430,21 +386,12 @@ func readNetworks(reader *bufio.Reader, network []Network) []Network {
 	// fmt.Println("0. Add Network")
 
 	fmt.Print("\nEnter the network ID to edit (Or Add New Network) : ")
-	id := atoi(readLine(reader)) - 1
+	id := helper.Atoi(helper.ReadLine(reader)) - 1
 
 	if id < 0 || id >= len(network) {
 		fmt.Println("Invalid ID")
 		return network
 	}
-	// } else if (id + 1) == 0 {
-	// 	network = append(network, readAdditionalNetworks(reader)...)
-	// 	fmt.Println(color.Green + "Network Added Successfully ." + color.Reset)
-	// 	return network
-	// } else if id == 100 {
-	// 	network = append(network[:id], network[id+1:]...)
-	// 	fmt.Println(color.Green + "Network is removed Successfully" + color.Reset)
-	// 	return network
-	// }
 
 	network[id].Name = readOptionalValue(reader, "Network Name : ", network[id].Name)
 	network[id].IP = readOptionalValue(reader, "Network IP : ", network[id].IP)
@@ -452,9 +399,7 @@ func readNetworks(reader *bufio.Reader, network []Network) []Network {
 
 	return network
 }
-func deleteNetwork() {
 
-}
 func readOptionalValue(reader *bufio.Reader, label, current string) string {
 	fmt.Printf("%s [current value => %s]: ", label, current)
 	userInput, _ := reader.ReadString('\n')
@@ -473,7 +418,7 @@ func readOptionalINT(reader *bufio.Reader, label string, current int) int {
 	if userInput == "" {
 		return current
 	}
-	return atoi(userInput)
+	return helper.Atoi(userInput)
 }
 func readDNSserversValue(reader *bufio.Reader, label string, current []string) []string {
 	fmt.Printf("%s [current value => %s]: ", label, current)
@@ -507,6 +452,7 @@ func loadTFvars(wdir string) (TFvars, error) {
 	if err != nil {
 		return TFvars{}, err
 	}
+
 	var tfvars TFvars
 	err = json.Unmarshal(data, &tfvars)
 	if err != nil {
@@ -516,7 +462,6 @@ func loadTFvars(wdir string) (TFvars, error) {
 	return tfvars, err
 }
 func GettingVMsLists(tfvars TFvars) {
-
 	for i, vm := range tfvars.VMs {
 		printVMBox(vm, i)
 		fmt.Println(color.Green + "================================================" + color.Reset)
@@ -560,10 +505,10 @@ func DeleteVMs(reader *bufio.Reader, wdir string) {
 	GettingVMsLists(tfvars)
 
 	fmt.Printf("\nEnter VM ID that you want to Delete : %s(enter 0 to return to menu)%s => ", color.Yellow, color.Reset)
-	// vmID := atoi(readLine(bufio.NewReader(os.Stdin))) - 1
+	// vmID := helper.Atoi(readLine(bufio.NewReader(os.Stdin))) - 1
 	vmID, _ := reader.ReadString('\n')
 	vmID = strings.TrimSpace(vmID)
-	vmIDndex := atoi(vmID) - 1
+	vmIDndex := helper.Atoi(vmID) - 1
 
 	if vmIDndex >= len(tfvars.VMs) {
 		fmt.Println(color.Red + "Invalid VM ID" + color.Reset)
