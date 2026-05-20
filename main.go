@@ -32,6 +32,8 @@ func main() {
 		return
 	case "--Cyborg_starter":
 		Cyborg(hostname, "/ansible-core-deploy")
+	case "--Webui":
+		Webui(hostname)
 	default:
 		figure.NewColorFigure("BBDH DevOps", "", "cyan", true).Print()
 		fmt.Println(color.Yellow + "\n choose one of commands ..." + color.Reset)

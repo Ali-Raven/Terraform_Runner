@@ -10,7 +10,6 @@ import (
 	"strings"
 	"text/tabwriter"
 	"time"
-
 	"github.com/TwiN/go-color"
 	"github.com/common-nighthawk/go-figure"
 	"github.com/terraform_runner/helper"

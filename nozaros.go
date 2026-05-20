@@ -2,13 +2,16 @@ package main
 
 import (
 	"bufio"
+	"crypto/sha256"
+	"encoding/hex"
 	"encoding/json"
 	"fmt"
-	"github.com/TwiN/go-color"
-	"github.com/terraform_runner/helper"
 	"os"
 	"strings"
 	"time"
+
+	"github.com/TwiN/go-color"
+	"github.com/terraform_runner/helper"
 )
 
 var (
@@ -28,11 +31,13 @@ type Network struct {
 }
 
 type VM struct {
+	ID         string    `json:"uuid"`
 	Name       string    `json:"name"`
 	NumCPU     int       `json:"num_cpus"`
 	MemoryGB   int       `json:"memory_gb"`
 	Gateway    string    `json:"gateway"`
 	DNSservers []string  `json:"dns_servers"`
+	Component  string    `json:"component"`
 	Networks   []Network `json:"networks"`
 }
 
@@ -97,7 +102,6 @@ func createNewVMs(reader *bufio.Reader, wdir string) {
 			Nozaros_configure(wdir)
 		}
 
-		// var vms []VM
 		vms, errVM := loadExistingVMs(wdir)
 		if errVM != nil {
 			panic(errVM)
@@ -115,6 +119,16 @@ func createNewVMs(reader *bufio.Reader, wdir string) {
 
 	}
 }
+
+func HashGenerator(name string) string {
+	if name == "" {
+		return "unkown"
+	}
+
+	hash := sha256.Sum256([]byte(name))
+	return hex.EncodeToString(hash[:])[:12]
+}
+
 func loadExistingVMs(wdir string) ([]VM, error) {
 	tfvars, err := loadTFvars(wdir)
 	if err != nil {
@@ -195,12 +209,14 @@ func collectVM(reader *bufio.Reader) VM {
 	numCPUstr := readRequired(reader, "Enter Number of CPUs: ")
 	memoryGBstr := readRequired(reader, "Enter Memory in GB: ")
 	gateway := readRequired(reader, "Enter Gateway: ")
-
+	
 	fmt.Print("Enter DNS servers : (Default : 1.1.1.1 , 1.0.0.1) ==> ")
 	dnsStr, _ := reader.ReadString('\n')
 	dnsStr = strings.TrimSpace(dnsStr)
 	fmt.Println("--------")
-
+	
+	// generate hash
+	genHash := HashGenerator(name)
 	// Set default DNS servers if user input is empty
 	dns := []string{"1.1.1.1", "1.0.0.1"}
 
@@ -210,12 +226,17 @@ func collectVM(reader *bufio.Reader) VM {
 			dns[i] = strings.TrimSpace(dns[i])
 		}
 	}
+	
+	component := readRequired(reader, "Enter Component Name: ")
+
 	vm := VM{
+		ID:         genHash,
 		Name:       strings.TrimSpace(name),
 		NumCPU:     helper.Atoi(numCPUstr),
 		MemoryGB:   helper.Atoi(memoryGBstr),
 		Gateway:    strings.TrimSpace(gateway),
 		DNSservers: dns,
+		Component: component,
 	}
 
 	// Collecting Management Network ===========================================================================================================
@@ -294,10 +315,18 @@ func readAdditionalNetworks(reader *bufio.Reader) []Network {
 func ModifyVMs(reader *bufio.Reader, wdir string) {
 	fmt.Println(color.Yellow + "\nfetching list of existings vms ..." + color.Reset)
 	time.Sleep(1 * time.Second)
+	// loadExistingVMs(wdir)
 
 	tfvars, err := loadTFvars(wdir)
 	if err != nil {
 		fmt.Println(color.Red + "Failed to load terraform.tfvars.json file" + color.Reset)
+		return
+	}
+
+	// fmt.Println(tfvars.VMs == )
+	// checking existing VMs
+	if len(tfvars.VMs) == 0 {
+		fmt.Println(color.Yellow + "No existing VMs for Modifying. Starting fresh..." + color.Reset)
 		return
 	}
 
@@ -335,6 +364,7 @@ func editVMs(reader *bufio.Reader, vm VM) VM {
 	vm.MemoryGB = readOptionalINT(reader, "Memory (GB): ", vm.MemoryGB)
 	vm.Gateway = readOptionalValue(reader, "Gateway : ", vm.Gateway)
 	vm.DNSservers = readDNSserversValue(reader, "DNS servers : ", vm.DNSservers)
+	vm.Component = readOptionalValue(reader , "Component Name : " , vm.Component)
 	vm.Networks = readNetworks(reader, vm.Networks)
 
 	return vm
@@ -476,6 +506,7 @@ func printVMBox(vm VM, index int) {
 	fmt.Printf("│ Memory (GB)    : %-20d │\n", vm.MemoryGB)
 	fmt.Printf("│ Gateway        : %-20s │\n", vm.Gateway)
 	fmt.Printf("│ DNS Servers    : %-20s │\n", strings.Join(vm.DNSservers, ","))
+	fmt.Printf("| Component Name : %-20s |\n", vm.Component)
 	fmt.Println("├──────────────────────────────────────┤")
 	fmt.Println("│ Networks                             │")
 	fmt.Println("├──────────────┬──────────────┬────────┤")
@@ -499,6 +530,12 @@ func DeleteVMs(reader *bufio.Reader, wdir string) {
 	tfvars, err := loadTFvars(wdir)
 	if err != nil {
 		fmt.Println(color.Red + "Failed to load terraform.tfvars.json file" + color.Reset)
+		return
+	}
+
+	// checking existings of VMs
+	if len(tfvars.VMs) == 0 {
+		fmt.Println(color.Yellow + "No existing VMs for Deleting. Starting fresh..." + color.Reset)
 		return
 	}
 
