@@ -28,7 +28,8 @@ Usage :
 
 A Go-based CLI project for DevOps workflow automation, including Terraform, Helm, YAML, staging, web UI, and server management helpers.
 
-> **Note:** This README was generated from the repository layout and file names. For exact command usage, verify the CLI flags in `main.go` and related command files.
+> [!NOTE]
+> This README was generated from the repository layout and file names. For exact command usage, verify the CLI flags in `main.go` and related command files.
 
 ## Table of Contents
 
@@ -57,7 +58,8 @@ This repository provides a CLI tool for managing Infrastructure as Code and DevO
 - Custom workflow modules in `cyborg.go`, `nozaros.go`, and `oranos.go`
 - Shared utilities under `helper/`
 
-> **Warning:** Make sure you have the proper environment configured before running commands. Missing tools or credentials may prevent successful execution.
+> [!WARNING]
+> Make sure you have the proper environment configured before running commands. Missing tools or credentials may prevent successful execution.
 
 ## Project Structure
 
@@ -82,7 +84,8 @@ This repository provides a CLI tool for managing Infrastructure as Code and DevO
 - Helm installed if using Helm-related commands
 - Any required cloud or cluster credentials configured
 
-> **Tip:** Run `go env` and `go version` to confirm your Go environment.
+> [!TIP]
+> Run `go env` and `go version` to confirm your Go environment.
 
 ## Installation
 
@@ -122,7 +125,8 @@ Common commands may include:
 ./terraform_DevOps webui start
 ```
 
-> **Note:** Replace the example commands above with the actual command names defined in `main.go` and related files.
+> [!NOTE]
+> Replace the example commands above with the actual command names defined in `main.go` and related files.
 
 ## Development
 
@@ -146,7 +150,8 @@ If unit tests are added later, use:
 go test ./...
 ```
 
-> **Important:** There are no test files listed in the repository currently. Add tests under the relevant packages as needed.
+> [!IMPORTANT]
+> There are no test files listed in the repository currently. Add tests under the relevant packages as needed.
 
 ## Contributing
 
@@ -159,6 +164,7 @@ go test ./...
 
 This project is licensed under the terms in the `LICENSE` file.
 
-> **Note:** Verify the license contents in `LICENSE` before redistributing or modifying.
+> [!NOTE]
+> Verify the license contents in `LICENSE` before redistributing or modifying.
 
 
