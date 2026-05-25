@@ -46,17 +46,7 @@ A Go-based CLI project for DevOps workflow automation, including Terraform, Helm
 
 ## Overview
 
-This repository provides a CLI tool for managing Infrastructure as Code and DevOps workflows. It appears to include support for Terraform-related automation, Helm chart management, YAML processing, staging environments, and an optional web UI layer.
-
-## Features
-
-- CLI entrypoint in `main.go`
-- Helm integration in `helm.go`
-- YAML configuration support in `yml.go`
-- Staging management in `stage.go`
-- Web UI support in `webui.go`
-- Custom workflow modules in `cyborg.go`, `nozaros.go`, and `oranos.go`
-- Shared utilities under `helper/`
+This repository provides a CLI tool for managing Infrastructure as Code and DevOps workflows. It appears to include support for **Terraform-related automation**, **Helm (Esxi and vCenter)** management, **working with Ansible** and an optional **web UI** layer.
 
 > [!WARNING]
 > Make sure you have the proper environment configured before running commands. Missing tools or credentials may prevent successful execution.

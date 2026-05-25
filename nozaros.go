@@ -25,6 +25,7 @@ var (
 )
 
 type Network struct {
+	ID      string `json:"uuid"`
 	Name    string `json:"name"`
 	IP      string `json:"ip"`
 	Netmask int    `json:"netmask"`
@@ -38,7 +39,7 @@ type VM struct {
 	Gateway    string    `json:"gateway"`
 	DNSservers []string  `json:"dns_servers"`
 	Component  string    `json:"component"`
-	Networks   []Network `json:"networks"`
+	Networks   []Network `json:"network_adaptors"`
 }
 
 type TFvars struct {
@@ -209,12 +210,12 @@ func collectVM(reader *bufio.Reader) VM {
 	numCPUstr := readRequired(reader, "Enter Number of CPUs: ")
 	memoryGBstr := readRequired(reader, "Enter Memory in GB: ")
 	gateway := readRequired(reader, "Enter Gateway: ")
-	
+
 	fmt.Print("Enter DNS servers : (Default : 1.1.1.1 , 1.0.0.1) ==> ")
 	dnsStr, _ := reader.ReadString('\n')
 	dnsStr = strings.TrimSpace(dnsStr)
 	fmt.Println("--------")
-	
+
 	// generate hash
 	genHash := HashGenerator(name)
 	// Set default DNS servers if user input is empty
@@ -226,7 +227,7 @@ func collectVM(reader *bufio.Reader) VM {
 			dns[i] = strings.TrimSpace(dns[i])
 		}
 	}
-	
+
 	component := readRequired(reader, "Enter Component Name: ")
 
 	vm := VM{
@@ -236,7 +237,7 @@ func collectVM(reader *bufio.Reader) VM {
 		MemoryGB:   helper.Atoi(memoryGBstr),
 		Gateway:    strings.TrimSpace(gateway),
 		DNSservers: dns,
-		Component: component,
+		Component:  component,
 	}
 
 	// Collecting Management Network ===========================================================================================================
@@ -248,13 +249,18 @@ func collectVM(reader *bufio.Reader) VM {
 	ManagementNetworkName, _ = reader.ReadString('\n')
 	ManagementNetworkName = strings.TrimSpace(ManagementNetworkName)
 	fmt.Println("--------")
+
+	var GenHashNetwork string
+
 	if ManagementNetworkName == "" {
 		ManagementNetworkName = "VM Network"
-
+		
+		GenHashNetwork = HashGenerator(ManagementNetworkName)
 		ManagementNetworkIP = readRequired(reader, "Enter Management Network IP : ")
 		ManagementNetworkNetmask = readRequired(reader, "Enter Management Network Netmask : ")
 
 		vm.Networks = append(vm.Networks, Network{
+			ID:      GenHashNetwork,
 			Name:    strings.TrimSpace(ManagementNetworkName),
 			IP:      strings.TrimSpace(ManagementNetworkIP),
 			Netmask: helper.Atoi(ManagementNetworkNetmask),
@@ -264,6 +270,7 @@ func collectVM(reader *bufio.Reader) VM {
 		ManagementNetworkNetmask = readRequired(reader, "Enter Management Network Netmask : ")
 
 		vm.Networks = append(vm.Networks, Network{
+			ID:      GenHashNetwork,
 			Name:    strings.TrimSpace(ManagementNetworkName),
 			IP:      strings.TrimSpace(ManagementNetworkIP),
 			Netmask: helper.Atoi(ManagementNetworkNetmask),
@@ -278,7 +285,7 @@ func collectVM(reader *bufio.Reader) VM {
 	additionalNetChoice, _ := reader.ReadString('\n')
 	additionalNetChoice = strings.TrimSpace(strings.ToLower(additionalNetChoice))
 
-	if additionalNetChoice == "yes" || additionalNetChoice == "y" || additionalNetChoice == " " {
+	if additionalNetChoice == "yes" || additionalNetChoice == "y" || additionalNetChoice == "" {
 		vm.Networks = append(vm.Networks, readAdditionalNetworks(reader)...)
 	} else {
 		fmt.Println(color.Yellow + "\nSkipping additional Networks..." + color.Reset)
@@ -294,13 +301,16 @@ func readAdditionalNetworks(reader *bufio.Reader) []Network {
 	netCount := helper.Atoi(numNetworkStr)
 
 	for j := 0; j < netCount; j++ {
+
 		fmt.Printf(color.Yellow+"\n--- Network %d ---\n"+color.Reset, j+1)
 		additionalNetwork_name = readRequired(reader, "Network name: ")
 		additionalNetwork_ip = readRequired(reader, "Network IP: ")
 		additionalNetwork_netmask = readRequired(reader, "Network Netmask: ")
 
+		GenHashAdditionNetwork := HashGenerator(additionalNetwork_name)
 		// Yml(additionalNetwork_ip)
 		vmNetworks = append(vmNetworks, Network{
+			ID:      GenHashAdditionNetwork,
 			Name:    strings.TrimSpace(additionalNetwork_name),
 			IP:      strings.TrimSpace(additionalNetwork_ip),
 			Netmask: helper.Atoi(additionalNetwork_netmask),
@@ -364,7 +374,7 @@ func editVMs(reader *bufio.Reader, vm VM) VM {
 	vm.MemoryGB = readOptionalINT(reader, "Memory (GB): ", vm.MemoryGB)
 	vm.Gateway = readOptionalValue(reader, "Gateway : ", vm.Gateway)
 	vm.DNSservers = readDNSserversValue(reader, "DNS servers : ", vm.DNSservers)
-	vm.Component = readOptionalValue(reader , "Component Name : " , vm.Component)
+	vm.Component = readOptionalValue(reader, "Component Name : ", vm.Component)
 	vm.Networks = readNetworks(reader, vm.Networks)
 
 	return vm
