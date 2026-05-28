@@ -19,7 +19,7 @@ func Webui(hostname string) {
 
 	currentPath , _ := CurrentDir()
 
-	execPy := exec.Command("bash" , "run_app")
+	execPy := exec.Command("./run_app")
 	execPy.Dir = currentPath + "/webui/"
 	execPy.Stderr = os.Stderr
 	execPy.Stdout = os.Stdout
