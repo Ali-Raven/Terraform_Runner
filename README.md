@@ -1,6 +1,6 @@
 # Terraform DevOps CLI
 <p align="center">
-  <img src="https://github.com/user-attachments/assets/7ec92d24-ba37-4a68-9da0-243a47bd89e3" alt="Go App Demo" style="width: 100%; max-width: 900px;" />
+  <img src="https://github.com/user-attachments/assets/b8b896a6-19d0-46ae-8ca2-62ab81e016a7" alt="Go App Demo" style="width: 100%; max-width: 900px;" />
 </p>
 
 A Go-based CLI project for DevOps workflow automation, including Terraform, Helm, YAML, staging, web UI, and server management helpers.
