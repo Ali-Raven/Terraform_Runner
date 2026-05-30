@@ -10,14 +10,14 @@ A Go-based CLI project for DevOps workflow automation, including Terraform, Helm
 
 ## Table of Contents
 
-- [Overview](#overview)
-- [Project Structure](#project-structure)
-- [Requirements](#requirements)
-- [Installation](#installation)
-- [Usage](#usage)
-- [Development](#development)
-- [Contributing](#contributing)
-- [License](#license)
+- [**Overview**](#overview)
+- [**Project Structure**](#project-structure)
+- [**Requirements**](#requirements)
+- [**Installation**](#installation)
+- [**Usage**](#usage)
+- [**Development**](#development)
+- [**Contributing**](#contributing)
+- [**License**](#license)
 
 ## Overview
 
