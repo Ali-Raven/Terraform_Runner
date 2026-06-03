@@ -2,14 +2,20 @@ package main
 
 import (
 	"bufio"
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"log"
+	"net"
+	"net/http"
 	"os"
 	"os/exec"
 	"strings"
+	"sync"
 	"text/tabwriter"
+	"text/template"
 	"time"
+
 	"github.com/TwiN/go-color"
 	"github.com/common-nighthawk/go-figure"
 	"github.com/terraform_runner/helper"
@@ -18,12 +24,17 @@ import (
 
 // initializing global variables
 var (
+	serverAddress              string
+	serverUser                 string
+	serverPassword             string
+	serverUrlIso               string
 	usrHostname                string
 	usrPassword                string
 	usrIP                      string
 	usrNetmask                 string
 	usrGateway                 string
 	usrVlan                    string
+	vmNic                      string
 	deployment_options_vCenter string
 	usrvCenterIp               string
 	prefix_netmask             string
@@ -34,7 +45,13 @@ var (
 	usrApiUrl                  string
 	usrApiTokenId              string
 	usrApiTokenSecret          string
+	isoServer                  *http.Server
 )
+
+type ISOServer struct {
+	server *http.Server
+	wg     sync.WaitGroup
+}
 
 // this function is for
 func Helm(hostname, wdir string) {
@@ -106,7 +123,7 @@ func ESXI_setup(hostname, wdir string, reader *bufio.Reader) {
 	switch strings.TrimSpace(userServer) {
 	case "1":
 		fmt.Println(color.Yellow + "HP G9 Server Selected ..." + color.Reset)
-		Custom_iso_maker(wdir, reader, "VMware-ESXi-7.0.3-20036589-HPE-703.0.0.10.9.1.5-Jul2022.iso", iso_path, currentDir, hostname)
+		Custom_iso_maker(wdir, reader, "VMware-ESXi-8.0.0-20513097-HPE-800.0.0.10.10.0.41-Oct2022.iso", iso_path, currentDir, hostname)
 	case "2":
 		fmt.Println(color.Yellow + "Huawei V3 Server Selected ..." + color.Reset)
 	case "3":
@@ -119,43 +136,20 @@ func ESXI_setup(hostname, wdir string, reader *bufio.Reader) {
 }
 
 // ==================================================================================== Custom ISO maker ==========================================================================================
-func Custom_iso_maker(wdir string, reader *bufio.Reader, isoName, isoPath, currenDir, hostname string) {
+
+func Custom_iso_maker(wdir string, reader *bufio.Reader, isoName, isoPath, currentDir, hostname string) {
 	fmt.Printf(color.Yellow+"Using Custom Image maker for ISO : %s\n"+color.Reset, isoName)
 	time.Sleep(1 * time.Second)
 
-	fmt.Printf("\nEnter ESXI Hostname: ")
-	usrHostname, _ = reader.ReadString('\n') // readRequired(reader, "\nEnter ESXI Hostname: ")
-	usrHostname = strings.TrimSpace(usrHostname)
+	usrHostname = ReadInfo(reader, "\nEnter ESXI Hostname ", "esxi.example.org")
+	usrPassword = ReadInfo(reader, "\nEnter ESXI Password ", "Aa@123321")
+	usrIP = ReadInfo(reader, "\nEnter ESXI IP Address ", "192.168.0.250")
+	usrNetmask = ReadInfo(reader, "\nEnter Netmask ", "255.255.255.0")
+	usrGateway = ReadInfo(reader, "\nEnter ESXI Gateway ", "192.168.0.254")
+	usrVlan = ReadInfo(reader, "\nEnter ESXI Management Network Vlan ", "0")
+	vmNic = ReadInfo(reader, "\nEnter ESXI VM NIC to connect ", "vmnic0")
 
-	fmt.Printf("\nEnter ESXI Password: ")
-	usrPassword, _ = reader.ReadString('\n') // readRequired(reader, "Enter ESXI Password: ")
-	usrPassword = strings.TrimSpace(usrPassword)
-
-	fmt.Printf("\nEnter ESXI IP Address: ")
-	usrIP, _ = reader.ReadString('\n') // readRequired(reader, "Enter ESXI IP Address: ")
-	usrIP = strings.TrimSpace(usrIP)
-
-	fmt.Printf("\nEnter Netmask: ")
-	usrNetmask, _ = reader.ReadString('\n') // readRequired(reader, "Enter Netmask: ")
-	usrNetmask = strings.TrimSpace(usrNetmask)
-
-	fmt.Printf("\nEnter ESXI Gateway: ")
-	usrGateway, _ = reader.ReadString('\n') // readRequired(reader, "Enter ESXI Gateway: ")
-	usrGateway = strings.TrimSpace(usrGateway)
-
-	fmt.Printf("\nEnter ESXI Management Network Vlan: ")
-	usrVlan, _ = reader.ReadString('\n') // readRequired(reader, "Enter ESXI Management Network Vlan: ")
-	usrVlan = strings.TrimSpace(usrVlan)
-
-	if usrHostname == "" || usrPassword == "" || usrIP == "" || usrNetmask == "" || usrGateway == "" || usrVlan == "" {
-		usrHostname = "esxi2.example.org"
-		usrPassword = "Aa@123321"
-		usrIP = "192.168.0.250"
-		usrNetmask = "255.255.255.0"
-		usrGateway = "192.168.0.254"
-		usrVlan = "0"
-	}
-
+	time.Sleep(1 * time.Second)
 	vars := map[string]string{
 		"esxi_hostname":   usrHostname,
 		"esxi_password":   usrPassword,
@@ -163,10 +157,11 @@ func Custom_iso_maker(wdir string, reader *bufio.Reader, isoName, isoPath, curre
 		"esxi_gateway":    usrGateway,
 		"esxi_netmask":    usrNetmask,
 		"esxi_vlan":       usrVlan,
+		"esxi_vmnic":      vmNic,
 	}
 
 	fmt.Println(color.Yellow + "Generating env file ..." + color.Reset)
-	time.Sleep(1 * time.Second)
+	time.Sleep(2 * time.Second)
 
 	cmd := exec.Command("bash", isoPath+"/maker.sh", isoPath+"/"+isoName)
 	cmd.Env = os.Environ()
@@ -185,9 +180,149 @@ func Custom_iso_maker(wdir string, reader *bufio.Reader, isoName, isoPath, curre
 
 	fmt.Println(color.Green + "Custom image setup is Successfully completed ..." + color.Reset)
 
+	time.Sleep(1 * time.Second)
+
+	ServeViaHttp(hostname, wdir , reader)
+
 	// Ansible_injection_esxi(reader, wdir, currenDir, hostname)
 	// Terraform_proxmox(reader, wdir, currenDir, hostname)
 }
+
+func ReadInfo(reader *bufio.Reader, label, defaultValue string) string {
+	fmt.Printf("%s [default value => %s]: ", label, defaultValue)
+
+	input, _ := reader.ReadString('\n')
+	input = strings.TrimSpace(input)
+
+	// If user just pressed Enter
+	if input == "" {
+		return defaultValue
+	}
+
+	return input
+}
+
+func ServeViaHttp(hostname, wdir string , reader *bufio.Reader) {
+	// get local IP
+	localIP, _ := GetLocalIP()
+
+	currentDir, _ := CurrentDir()
+
+	isoPath := currentDir + wdir + "/iso_files/"
+
+	if isoPath == "" {
+		log.Fatal("Please provide ISO path with -iso")
+	}
+
+	if _, err := os.Stat(isoPath); os.IsNotExist(err) {
+		log.Fatalf("ISO file not found: %s", isoPath)
+	}
+
+	mux := http.NewServeMux()
+
+	mux.Handle("/files/",
+		http.StripPrefix("/files/",
+			http.FileServer(http.Dir(isoPath)),
+		),
+	)
+	port := "5656"
+	isoServer = &http.Server{
+		Addr:    ":" + port,
+		Handler: mux,
+	}
+
+	isoURL := fmt.Sprintf("http://%s:%s/files/custom-esxi-ks.iso" , localIP.String() , port)
+
+	GettingServerInfoToBegin(wdir , currentDir , "HP G9" ,hostname , isoPath , isoURL , reader)
+
+	go func() {
+		fmt.Printf("%sServing ISO at: %s%s\n", color.Green, isoURL , color.Reset)
+
+		if err := isoServer.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+			log.Printf("%sHTTP server error : %v%s", color.Red, err, color.Reset)
+		}
+	}()
+
+	time.Sleep(2 * time.Second)
+	fmt.Println(color.Yellow + "Starting Ansible to Installing the ESXI on Server ..." + color.Reset)
+	time.Sleep(1 * time.Second)
+	// cmd2 := exec.Command("ansible-playbook" , "playbooks/copy-install-from-image.yml")
+	cmd2 := exec.Command(
+		"ansible-playbook",
+		"playbooks/baremetal.yml",
+		"-e", fmt.Sprintf("file_url=http://%s:%s/files/", localIP.String(), port),
+	)
+	cmd2.Dir = currentDir + "/bareMetal-ansible-exsi"
+
+	cmd2.Stdout = os.Stdout
+	cmd2.Stderr = os.Stderr
+
+	if err := cmd2.Run(); err != nil {
+		log.Printf("Ansible Failed : %v", err)
+	}
+
+	fmt.Println(color.Yellow + "waiting for downloading and installation of iso file ..." + color.Reset)
+	time.Sleep(1400 * time.Second)
+}
+
+func GetLocalIP() (net.Addr, error) {
+	listOfInterface, _ := net.InterfaceAddrs()
+
+	return listOfInterface[1], nil
+}
+
+func GettingServerInfoToBegin(wdir, currentDir, model, hostname, iso_path , isoURL string, reader *bufio.Reader) {
+	fmt.Println(color.Yellow + "#######################################" + color.Reset)
+	fmt.Println(color.Yellow + "Getting worker Server Info from user ... " + color.Reset)
+	fmt.Println(color.Yellow + "#######################################" + color.Reset)
+	time.Sleep(1 * time.Second)
+
+	// getting baremetal server information
+	serverAddress = readRequired(reader, "\nEnter Address of Server : ")
+	serverUser = readRequired(reader, "\nEnter Username of Server : ")
+	serverPassword = readRequired(reader, "\nEnter Password to login : ")
+
+	fmt.Println(color.Yellow + "generating vars file (yaml) ..." + color.Reset)
+	time.Sleep(2 * time.Second)
+	ServerVarsYmlInfo(serverAddress , serverUser , serverPassword , isoURL , wdir , currentDir)
+
+}
+
+func ServerVarsYmlInfo(serverAddress, serverUser, serverPassword, serverUrlIso , wdir , currenDir string) {
+	dataStucture := struct {
+		ServerAddress  string
+		ServerUser     string
+		ServerPassword string
+		ServerURL      string
+	}{
+		serverAddress,
+		serverUser,
+		serverPassword,
+		serverUrlIso,
+	}
+
+	data := `---
+server_address: "{{ .ServerAddress }}"
+server_username: "{{ .ServerUser }}"
+server_password: "{{ .ServerPassword }}"
+server_iso_url: "{{ .ServerURL }}"`
+
+	dataTemplate := template.Must(template.New("yaml").Parse(data))
+
+	var buf bytes.Buffer
+
+	if err := dataTemplate.Execute(&buf , dataStucture) ; err != nil {
+		panic(err)
+	}
+
+	fullPath := currenDir + "/bareMetal-ansible-exsi/roles/copy-install-from-image/vars/"
+	filename := "main.yml"
+	os.WriteFile(fullPath + filename , buf.Bytes() , 0644)
+	fmt.Printf("\n%sGenerating %s  file ...%s"  , color.Yellow , filename, color.Reset )
+	time.Sleep(2 * time.Second)
+	fmt.Printf("\n%s%s generated in the path %s%s\n\n" , color.Green , filename , fullPath , color.Reset)
+}
+
 
 // ==================================================================================== Custom ISO maker (END) ==========================================================================================
 
@@ -235,43 +370,44 @@ func Custom_iso_maker(wdir string, reader *bufio.Reader, isoName, isoPath, curre
 
 // ==================================================================================== Ansible injection (ESXI)  ==========================================================================================
 
-// func Ansible_injection_esxi(reader *bufio.Reader, wdir, currentDir, hostname string) {
-// 	fmt.Println(color.Yellow + "Running Ansible .." + color.Reset)
-// 	time.Sleep(1 * time.Second)
+func Ansible_injection_esxi(reader *bufio.Reader, wdir, currentDir, hostname string) {
+	fmt.Println(color.Yellow + "Running Ansible .." + color.Reset)
+	time.Sleep(1 * time.Second)
 
-// 	playbooks_path := currentDir + "/ansible-vmware-config/playbooks/"
-// 	parentAnsible := currentDir + "/ansible-vmware-config"
-// 	cmd := exec.Command("ansible-playbook", playbooks_path+"upload-iso-to-datastore.yml")
-// 	cmd.Dir = parentAnsible
-// 	cmd.Stdout = os.Stdout
-// 	cmd.Stderr = os.Stderr
+	playbooks_path := currentDir + "/ansible-vmware-config/playbooks/"
+	parentAnsible := currentDir + "/ansible-vmware-config"
+	cmd := exec.Command("ansible-playbook", playbooks_path+"upload-iso-to-datastore.yml")
+	cmd.Dir = parentAnsible
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
 
-// 	if err := cmd.Run(); err != nil {
-// 		log.Fatal(err)
-// 	}
+	if err := cmd.Run(); err != nil {
+		log.Fatal(err)
+	}
 
-// 	fmt.Println(color.Green + "Upload Successfully ..." + color.Reset)
-// 	time.Sleep(1 * time.Second)
+	fmt.Println(color.Green + "Upload Successfully ..." + color.Reset)
+	time.Sleep(1 * time.Second)
 
-// 	fmt.Println(color.Green + "Creating ESXI ...." + color.Reset)
-// 	time.Sleep(1 * time.Second)
-// 	cmd2 := exec.Command("ansible-playbook", playbooks_path+"create-vm-on-vcenter.yml")
-// 	cmd2.Dir = parentAnsible
-// 	cmd2.Stdout = os.Stdout
-// 	cmd2.Stderr = os.Stderr
+	fmt.Println(color.Green + "Creating ESXI ...." + color.Reset)
+	time.Sleep(1 * time.Second)
+	cmd2 := exec.Command("ansible-playbook", playbooks_path+"create-vm-on-vcenter.yml")
+	cmd2.Dir = parentAnsible
+	cmd2.Stdout = os.Stdout
+	cmd2.Stderr = os.Stderr
 
-// 	if err2 := cmd2.Run(); err2 != nil {
-// 		log.Fatal(err2)
-// 	}
+	if err2 := cmd2.Run(); err2 != nil {
+		log.Fatal(err2)
+	}
 
-// 	fmt.Println(color.Green + "ESXI Deployed Successfully ..." + color.Reset)
-// 	time.Sleep(1 + time.Second)
+	fmt.Println(color.Green + "vCenter Deployed Successfully ..." + color.Reset)
+	time.Sleep(1 + time.Second)
+}
 
 // asking user to install vCenter or not
 
-// func Exec_ansible() {
-// 	// implement soon
-// }
+func Exec_ansible() {
+	// implement soon
+}
 
 func MinimalInputEsxi(reader *bufio.Reader, wdir string) {
 	figure.NewColorFigure("vCenter Setup", "", "green", true).Print()
