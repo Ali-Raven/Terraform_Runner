@@ -1,0 +1,47 @@
+variables:
+  GO_VERSION: "1.25.4"
+  CGO_ENABLED: "0"
+
+cache:
+  paths:
+    - /go/pkg/mod/
+
+stages:
+  - build
+
+build:
+  stage: build
+  image: golang:${GO_VERSION}
+  script:
+    - GOOS=linux GOARCH=amd64 go build -o terraform-ci .
+    - mkdir -p bin
+    - mv terraform-ci bin/
+    - ls -la bin/
+  artifacts:
+    paths:
+      - bin/
+    expire_in: 20 days
+  tags:
+    - docker
+    - go
+    - linux
+
+
+
+# golangci-lint:
+#   stage: lint
+#   image: golangci/golangci-lint:latest
+#   script:
+#     - golangci-lint run --verbose
+#   tags:
+#     - docker
+
+# test:
+#   stage: test
+#   image: golang:${GO_VERSION}
+#   script:
+#     - go mod download
+#     - go test ./... -v -race -coverprofile=coverage.out
+#     - go tool cover -func=coverage.out
+#   tags:
+#     - docker

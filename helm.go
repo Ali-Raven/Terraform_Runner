@@ -18,6 +18,7 @@ import (
 
 	"github.com/TwiN/go-color"
 	"github.com/common-nighthawk/go-figure"
+	"github.com/manifoldco/promptui"
 	"github.com/terraform_runner/helper"
 	"github.com/terraform_runner/servers"
 )
@@ -27,7 +28,6 @@ var (
 	serverAddress              string
 	serverUser                 string
 	serverPassword             string
-	serverUrlIso               string
 	usrHostname                string
 	usrPassword                string
 	usrIP                      string
@@ -35,10 +35,12 @@ var (
 	usrGateway                 string
 	usrVlan                    string
 	vmNic                      string
+	esxiUsername               string
 	deployment_options_vCenter string
 	usrvCenterIp               string
 	prefix_netmask             string
 	vCenter_gateway            string
+	usrvCenterUsername         string
 	system_name_vCenter        string
 	vCenter_management_pass    string
 	vCenter_login_pass         string
@@ -74,7 +76,7 @@ func Helm(hostname, wdir string) {
 		ESXI_setup(hostname, wdir, reader)
 		return
 	case "2":
-		MinimalInputEsxi(reader, wdir)
+		MinimalInputEsxi(reader, wdir, hostname)
 		return
 	case "3":
 		fmt.Println(color.Yellow + "Exiting..." + color.Reset)
@@ -123,7 +125,7 @@ func ESXI_setup(hostname, wdir string, reader *bufio.Reader) {
 	switch strings.TrimSpace(userServer) {
 	case "1":
 		fmt.Println(color.Yellow + "HP G9 Server Selected ..." + color.Reset)
-		Custom_iso_maker(wdir, reader, "VMware-ESXi-8.0.0-20513097-HPE-800.0.0.10.10.0.41-Oct2022.iso", iso_path, currentDir, hostname)
+		Custom_iso_maker(wdir, reader, "VMware-ESXi-8.0.3-24022510-HPE-803.0.0.11.7.0.23-Jun2024.iso", iso_path, currentDir, hostname)
 	case "2":
 		fmt.Println(color.Yellow + "Huawei V3 Server Selected ..." + color.Reset)
 	case "3":
@@ -182,9 +184,8 @@ func Custom_iso_maker(wdir string, reader *bufio.Reader, isoName, isoPath, curre
 
 	time.Sleep(1 * time.Second)
 
-	ServeViaHttp(hostname, wdir , reader)
+	ServeViaHttp(hostname, wdir, reader)
 
-	// Ansible_injection_esxi(reader, wdir, currenDir, hostname)
 	// Terraform_proxmox(reader, wdir, currenDir, hostname)
 }
 
@@ -202,7 +203,7 @@ func ReadInfo(reader *bufio.Reader, label, defaultValue string) string {
 	return input
 }
 
-func ServeViaHttp(hostname, wdir string , reader *bufio.Reader) {
+func ServeViaHttp(hostname, wdir string, reader *bufio.Reader) {
 	// get local IP
 	localIP, _ := GetLocalIP()
 
@@ -231,19 +232,19 @@ func ServeViaHttp(hostname, wdir string , reader *bufio.Reader) {
 		Handler: mux,
 	}
 
-	isoURL := fmt.Sprintf("http://%s:%s/files/custom-esxi-ks.iso" , localIP.String() , port)
+	isoURL := fmt.Sprintf("http://%s:%s/files/custom-esxi-ks.iso", strings.Replace(localIP.String(), "/24", "", 1), port)
 
-	GettingServerInfoToBegin(wdir , currentDir , "HP G9" ,hostname , isoPath , isoURL , reader)
+	GettingServerInfoToBegin(wdir, currentDir, "HP G9", hostname, isoPath, isoURL, reader)
 
 	go func() {
-		fmt.Printf("%sServing ISO at: %s%s\n", color.Green, isoURL , color.Reset)
+		fmt.Printf("%sServing ISO at: %s%s\n", color.Green, isoURL, color.Reset)
 
 		if err := isoServer.ListenAndServe(); err != nil && err != http.ErrServerClosed {
 			log.Printf("%sHTTP server error : %v%s", color.Red, err, color.Reset)
 		}
 	}()
 
-	time.Sleep(2 * time.Second)
+	time.Sleep(1 * time.Second)
 	fmt.Println(color.Yellow + "Starting Ansible to Installing the ESXI on Server ..." + color.Reset)
 	time.Sleep(1 * time.Second)
 	// cmd2 := exec.Command("ansible-playbook" , "playbooks/copy-install-from-image.yml")
@@ -271,7 +272,7 @@ func GetLocalIP() (net.Addr, error) {
 	return listOfInterface[1], nil
 }
 
-func GettingServerInfoToBegin(wdir, currentDir, model, hostname, iso_path , isoURL string, reader *bufio.Reader) {
+func GettingServerInfoToBegin(wdir, currentDir, model, hostname, iso_path, isoURL string, reader *bufio.Reader) {
 	fmt.Println(color.Yellow + "#######################################" + color.Reset)
 	fmt.Println(color.Yellow + "Getting worker Server Info from user ... " + color.Reset)
 	fmt.Println(color.Yellow + "#######################################" + color.Reset)
@@ -284,11 +285,11 @@ func GettingServerInfoToBegin(wdir, currentDir, model, hostname, iso_path , isoU
 
 	fmt.Println(color.Yellow + "generating vars file (yaml) ..." + color.Reset)
 	time.Sleep(2 * time.Second)
-	ServerVarsYmlInfo(serverAddress , serverUser , serverPassword , isoURL , wdir , currentDir)
+	ServerVarsYmlInfo(serverAddress, serverUser, serverPassword, isoURL, wdir, currentDir)
 
 }
 
-func ServerVarsYmlInfo(serverAddress, serverUser, serverPassword, serverUrlIso , wdir , currenDir string) {
+func ServerVarsYmlInfo(serverAddress, serverUser, serverPassword, serverUrlIso, wdir, currenDir string) {
 	dataStucture := struct {
 		ServerAddress  string
 		ServerUser     string
@@ -311,124 +312,196 @@ server_iso_url: "{{ .ServerURL }}"`
 
 	var buf bytes.Buffer
 
-	if err := dataTemplate.Execute(&buf , dataStucture) ; err != nil {
+	if err := dataTemplate.Execute(&buf, dataStucture); err != nil {
 		panic(err)
 	}
 
 	fullPath := currenDir + "/bareMetal-ansible-exsi/roles/copy-install-from-image/vars/"
 	filename := "main.yml"
-	os.WriteFile(fullPath + filename , buf.Bytes() , 0644)
-	fmt.Printf("\n%sGenerating %s  file ...%s"  , color.Yellow , filename, color.Reset )
+	os.WriteFile(fullPath+filename, buf.Bytes(), 0644)
+	fmt.Printf("\n%sGenerating %s  file ...%s", color.Yellow, filename, color.Reset)
 	time.Sleep(2 * time.Second)
-	fmt.Printf("\n%s%s generated in the path %s%s\n\n" , color.Green , filename , fullPath , color.Reset)
+	fmt.Printf("\n%s%s generated in the path %s%s\n\n", color.Green, filename, fullPath, color.Reset)
 }
-
 
 // ==================================================================================== Custom ISO maker (END) ==========================================================================================
 
-// ==================================================================================== Terraform Proxmox (ESXI)  ==========================================================================================
-// func Terraform_proxmox(reader *bufio.Reader, wdir, crrentDir, hostname string) {
-// 	fmt.Println(color.Yellow + "\nTerraform Section is running ..." + color.Reset)
-// 	time.Sleep(1 * time.Second)
-// 	fmt.Println(color.Yellow + "Enter Authentication Parameters :" + color.Reset)
-
-// 	usrApiUrl = readRequired(reader, "\nEnter Proxmox API URL : ")
-// 	usrApiTokenId = readRequired(reader, "Enter Api TOKEN ID : ")
-// 	usrApiTokenSecret = readRequired(reader, "Enter Api TOKEN Secret : ")
-
-// 	fmt.Println(color.Green + "\nParameters set Successfully ." + color.Reset)
-// 	time.Sleep(1 * time.Second)
-
-// 	// ============= running terraform ==============================
-
-// 	// ============= running terraform (END) ==============================
-
-// 	// to continue and Setup
-// 	fmt.Print(color.Yellow + "\nDo you want to install vCenter Product on your Esxi ? (y/n) " + color.Reset)
-// 	usrChoise, _ := reader.ReadString('\n')
-// 	usrChoise = strings.TrimSpace(usrChoise)
-
-// 	switch usrChoise {
-// 	case "y", "yes", "", "Yes", "YES":
-// 		fmt.Println(color.Yellow + "vCenter installation Processing ..." + color.Reset)
-// 		time.Sleep(1 * time.Second)
-// 		Vcenter_setup(wdir, reader)
-// 	case "n", "no", "NO", "No":
-// 		MinimalInputEsxi(reader, wdir)
-// 	default:
-// 		fmt.Println(color.Red + "Ivalid choice." + color.Reset)
-// 		Helm(hostname, wdir)
-// 	}
-
-// 	fmt.Println(color.Yellow + "\nReturning to Main menu ..." + color.Reset)
-// 	time.Sleep(1 * time.Second)
-// 	figure.NewColorFigure("HELM", "", "blue", true).Print()
-// 	Helm(wdir, hostname)
-// }
-
-// ==================================================================================== Terraform Proxmox (ESXI)(END)  ==========================================================================================
-
 // ==================================================================================== Ansible injection (ESXI)  ==========================================================================================
 
-func Ansible_injection_esxi(reader *bufio.Reader, wdir, currentDir, hostname string) {
-	fmt.Println(color.Yellow + "Running Ansible .." + color.Reset)
-	time.Sleep(1 * time.Second)
+// func Ansible_injection_esxi(reader *bufio.Reader, wdir, currentDir, hostname, usrvCenterIp, prefix_netmask, vCenter_gateway, system_name_vCenter, vCenter_management_pass, vCenter_login_pass string) {
+// 	fmt.Println(color.Yellow + "Running Ansible for Configuring Esxi .." + color.Reset)
+// 	time.Sleep(1 * time.Second)
 
-	playbooks_path := currentDir + "/ansible-vmware-config/playbooks/"
-	parentAnsible := currentDir + "/ansible-vmware-config"
-	cmd := exec.Command("ansible-playbook", playbooks_path+"upload-iso-to-datastore.yml")
-	cmd.Dir = parentAnsible
-	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stderr
+// 	playbooks_path := currentDir + "/ansible-vmware-config/playbooks/"
+// 	parentAnsible := currentDir + "/ansible-vmware-config"
+// 	cmd := exec.Command("ansible-playbook", playbooks_path+"upload-iso-to-datastore.yml")
+// 	cmd.Dir = parentAnsible
+// 	cmd.Stdout = os.Stdout
+// 	cmd.Stderr = os.Stderr
 
-	if err := cmd.Run(); err != nil {
-		log.Fatal(err)
-	}
+// 	if err := cmd.Run(); err != nil {
+// 		log.Fatal(err)
+// 	}
 
-	fmt.Println(color.Green + "Upload Successfully ..." + color.Reset)
-	time.Sleep(1 * time.Second)
+// 	fmt.Println(color.Green + "Upload Successfully ..." + color.Reset)
+// 	time.Sleep(1 * time.Second)
 
-	fmt.Println(color.Green + "Creating ESXI ...." + color.Reset)
-	time.Sleep(1 * time.Second)
-	cmd2 := exec.Command("ansible-playbook", playbooks_path+"create-vm-on-vcenter.yml")
-	cmd2.Dir = parentAnsible
-	cmd2.Stdout = os.Stdout
-	cmd2.Stderr = os.Stderr
+// 	fmt.Println(color.Green + "Creating ESXI ...." + color.Reset)
+// 	time.Sleep(1 * time.Second)
+// 	cmd2 := exec.Command("ansible-playbook", playbooks_path+"create-vm-on-vcenter.yml")
+// 	cmd2.Dir = parentAnsible
+// 	cmd2.Stdout = os.Stdout
+// 	cmd2.Stderr = os.Stderr
 
-	if err2 := cmd2.Run(); err2 != nil {
-		log.Fatal(err2)
-	}
+// 	if err2 := cmd2.Run(); err2 != nil {
+// 		log.Fatal(err2)
+// 	}
 
-	fmt.Println(color.Green + "vCenter Deployed Successfully ..." + color.Reset)
-	time.Sleep(1 + time.Second)
-}
+// 	fmt.Println(color.Green + "vCenter VM Deployed Successfully ..." + color.Reset)
+// 	time.Sleep(1 + time.Second)
+// }
+
+// func GenerateYmlvCenter(usrvCenterIp, usrvCenterUsername, prefix_netmask, vCenter_gateway, system_name_vCenter, vCenter_management_pass, vCenter_login_pass, wdir, currenDir string) {
+// 	dataStucture := struct {
+// 		VcenterIP             string
+// 		VcenterUsername       string
+// 		PrefixNetmask         string
+// 		VcenterGateway        string
+// 		SystemNameVcenter     string
+// 		VcenterManagementPass string
+// 		VcenterLoginPass      string
+// 	}{
+// 		usrvCenterIp,
+// 		usrvCenterUsername,
+// 		prefix_netmask,
+// 		vCenter_gateway,
+// 		system_name_vCenter,
+// 		vCenter_management_pass,
+// 		vCenter_login_pass,
+// 	}
+
+// 	data1_ := `---
+// vcenter_hostname: "{{ .VcenterIP }}"
+// vcenter_username: "{{ .VcenterUsername }}"
+// vcenter_password: "{{ .VcenterLoginPass }}"
+// validate_certs: false
+
+// datacenter_name: "Datacenter"
+// datastore_name: "datastore1"
+
+// local_iso_path: "../../esxi_installer/iso_files/custom-esxi-ks.iso"
+// datastore_iso_path: "custom-esxi-ks.iso"`
+
+// 	dataTemplate := template.Must(template.New("yaml").Parse(data))
+
+// 	var buf bytes.Buffer
+
+// 	if err := dataTemplate.Execute(&buf, dataStucture); err != nil {
+// 		panic(err)
+// 	}
+
+// 	fullPath1 := currenDir + "ansible-vmware-config/roles/upload-iso-to-datastore/vars/"
+// 	fullPath2 := currenDir + "ansible-vmware-config/roles/create-vm-on-vcenter/vars/"
+// 	filename := "main.yml"
+
+// 	fmt.Println(color.Yellow + "generating on ")
+// 	os.WriteFile(fullPath1+filename, buf.Bytes(), 0644)
+// 	fmt.Printf("\n%sGenerating %s  file ...%s", color.Yellow, filename, color.Reset)
+
+// 	time.Sleep(2 * time.Second)
+// 	fmt.Printf("\n%s%s generated in the path %s%s\n\n", color.Green, filename, fullPath, color.Reset)
+// }
 
 // asking user to install vCenter or not
 
-func Exec_ansible() {
-	// implement soon
-}
+// func Exec_ansible() {
+// 	// implement soon
+// }
 
-func MinimalInputEsxi(reader *bufio.Reader, wdir string) {
+func MinimalInputEsxi(reader *bufio.Reader, wdir, hostname string) {
+	currentDir, _ := CurrentDir()
+
 	figure.NewColorFigure("vCenter Setup", "", "green", true).Print()
 	fmt.Println(color.Blue + "\nUsing vCenter_setup" + color.Reset)
 	fmt.Println(color.Yellow + "\n\nYou have Existing ESXI host " + color.Reset)
-	fmt.Println(color.Yellow + "Enter you vCenter configs : " + color.Reset)
-	usrHostname = helper.ReadRequired(reader, "\nEnter ESXI Hostname: ")
-	usrIP = helper.ReadRequired(reader, "Enter ESXI IP Address: ")
-	usrNetmask = helper.ReadRequired(reader, "Enter Netmask: ")
-	usrGateway = helper.ReadRequired(reader, "Enter ESXI Gateway: ")
-	usrVlan = helper.ReadRequired(reader, "Enter ESXI Management Network Vlan: ")
+	fmt.Println(usrHostname, usrGateway)
+	fmt.Println(color.Yellow + "Enter you ESXI configs : \n" + color.Reset)
+
+	usrHostname = Ask("Enter ESXI Hostname")
+	usrIP = Ask("Enter ESXI IP Address")
+	usrPassword = AskPassword("Enter ESXI Password")
+	esxiUsername = Ask("Enter ESXI username (e.g. root)")
+	usrNetmask = Ask("Enter Netmask")
+	usrGateway = Ask("Enter ESXI Gateway")
+	usrVlan = Ask("Enter ESXI Management Network Vlan")
+	vmNic = Ask("Enter ESXI VM NIC to connect")
+	// usrHostname = helper.ReadRequired(reader, "\nEnter ESXI Hostname: ")
+	// usrIP = helper.ReadRequired(reader, "Enter ESXI IP Address: ")
+
+	// prompt := promptui.Prompt{
+	// 	Label: "Enter ESXI Password : ",
+	// 	Mask:  '*',
+	// }
+	// usrPassword , err := prompt.Run()
+	// if err != nil {
+	// 	panic(err)
+	// }
+
+	// usrPassword = helper.ReadRequired(reader, "Enter ESXI Password : ")
+	// esxiUsername = helper.ReadRequired(reader, "Enter ESXI username (e.g. root) : ")
+	// usrNetmask = helper.ReadRequired(reader, "Enter Netmask: ")
+	// usrGateway = helper.ReadRequired(reader, "Enter ESXI Gateway: ")
+	// usrVlan = helper.ReadRequired(reader, "Enter ESXI Management Network Vlan: ")
+	// vmNic = helper.ReadRequired(reader, "\nEnter ESXI VM NIC to connect ")
 
 	fmt.Println(color.Green + "\nGetting Esxi Parameters Successfully Completed " + color.Reset)
 	time.Sleep(1 * time.Second)
-	Vcenter_setup(wdir, reader)
+
+	Vcenter_setup(wdir, currentDir, hostname, reader)
+}
+
+func Ask(label string) string {
+	prompt := promptui.Prompt{
+		Label: label,
+		Validate: func(userinput string) error {
+			if len(userinput) == 0 {
+				return fmt.Errorf("cannot be empty")
+			}
+			return nil
+		},
+	}
+
+	result, err := prompt.Run()
+	if err != nil {
+		panic(err)
+	}
+
+	return result
+}
+func AskPassword(label string) string {
+	prompt := promptui.Prompt{
+		Label: label,
+		Mask:  '*',
+		Validate: func(userinput string) error {
+			if len(userinput) == 0 {
+				return fmt.Errorf("Cannot be Empty")
+			}
+			return nil
+		},
+	}
+
+	result, err := prompt.Run()
+	if err != nil {
+		panic(err)
+	}
+
+	return result
 }
 
 // ==================================================================================== Ansible injection (ESXI) (END) ==========================================================================================
 
 // ==================================================================================== vCenter setup ==========================================================================================
-func Vcenter_setup(wdir string, reader *bufio.Reader) {
+func Vcenter_setup(wdir, currentDir, hostname string, reader *bufio.Reader) {
 
 	fmt.Println(color.Yellow + "Setting up vCenter Product ..." + color.Reset)
 	fmt.Println()
@@ -460,17 +533,28 @@ func Vcenter_setup(wdir string, reader *bufio.Reader) {
 		deployment_options_vCenter = "x-large"
 	default:
 		fmt.Println(color.Red + "Choose from the optinos ...." + color.Reset)
-		Vcenter_setup(wdir, reader)
+		Vcenter_setup(wdir, currentDir, hostname, reader)
 
 	}
 	// ---------------------end of switch---------------------------------
+	usrvCenterIp = Ask("Enter vCenter IP")
+	usrvCenterUsername = Ask("Enter Username of vCenter") + "@vsphere.local"
+	prefix_netmask = Ask("Enter Netmask (e.g. 24)")
+	vCenter_gateway = Ask("Enter vCenter Gateway")
+	system_name_vCenter = Ask("Enter system Name")
+	vCenter_management_pass = AskPassword("Enter vCenter Management Password")
+	vCenter_login_pass = AskPassword("Enter vCenter Login Password")
 
-	usrvCenterIp = helper.ReadRequired(reader, "Enter vCenter IP : ")
-	prefix_netmask = helper.ReadRequired(reader, "Enter Netmask (e.g. 24) : ")
-	vCenter_gateway = helper.ReadRequired(reader, "Enter vCenter Gateway : ")
-	system_name_vCenter = helper.ReadRequired(reader, "Enter System name : ")
-	vCenter_management_pass = helper.ReadRequired(reader, "Enter vCenter Management Password : ")
-	vCenter_login_pass = helper.ReadRequired(reader, "Enter vCenter login Password : ")
+	// usrvCenterIp = helper.ReadRequired(reader, "Enter vCenter IP : ")
+	// usrvCenterUsername = helper.ReadRequired(reader, "Enter Username of vCenter : ") + "@vsphere.local"
+	// prefix_netmask = helper.ReadRequired(reader, "Enter Netmask (e.g. 24) : ")
+	// vCenter_gateway = helper.ReadRequired(reader, "Enter vCenter Gateway : ")
+	// system_name_vCenter = helper.ReadRequired(reader, "Enter System name : ")
+	// vCenter_management_pass = helper.ReadRequired(reader, "Enter vCenter Management Password : ")
+	// vCenter_login_pass = helper.ReadRequired(reader, "Enter vCenter login Password : ")
+
+	// running ansible for creating vm on esxi
+	// Ansible_injection_esxi(reader, wdir, currentDir, hostname, usrvCenterIp, usrvCenterUsername, prefix_netmask, vCenter_gateway, system_name_vCenter, vCenter_management_pass, vCenter_login_pass)
 
 	JsonData := map[string]any{
 		"__version":  "2.13.0",
@@ -533,12 +617,11 @@ func Vcenter_setup(wdir string, reader *bufio.Reader) {
 	fmt.Println(color.Blue + "=========================================================================================================" + color.Reset)
 	fmt.Println(color.Yellow + "\nInstalling vCenter Product ..." + color.Reset)
 	time.Sleep(1 * time.Second)
-	Installing_vCenter(wdir)
+	Installing_vCenter(wdir, hostname)
 }
 
-func Installing_vCenter(wdir string) {
+func Installing_vCenter(wdir, hostname string) {
 
-	// ./vcsa-deploy install --accept-eula --no-ssl-certificate-verification ~/myfiles/test/vcsa-auto-deploy/production-vcsa.json
 	currentDir, _ := os.Getwd()
 	jsonPath := currentDir + "/production-vcsa.json"
 
@@ -553,9 +636,85 @@ func Installing_vCenter(wdir string) {
 	}
 
 	fmt.Println(color.Green + "vCenter installed Successfully ...." + color.Reset)
+
+	CreateClusterAndDataStoreOnVcneter(wdir, hostname)
+
 	fmt.Println(color.Yellow + "\nExiting ..." + color.Reset)
 	time.Sleep(2 * time.Second)
+	fmt.Println("Bye.")
 	os.Exit(0)
 }
 
 // ==================================================================================== vCenter setup (END) ==========================================================================================
+
+// ==================================================================================== vCenter setup (create and copy Cluster ans Datastore) (START) ================================================
+func CreateClusterAndDataStoreOnVcneter(wdir, hostname string) {
+	fmt.Println(color.Yellow + "Creating Cluster and Datastore on vCenter with Ansible ..." + color.Reset)
+	time.Sleep(2 * time.Second)
+
+	currentPath, _ := CurrentDir()
+	fullPath := currentPath + "ansible-vmware-config"
+
+	fmt.Printf("%sGenerating vars.yml on path %s %s", color.Yellow, fullPath+"/roles/create-cluster-and-datastore-on-vCenter/vars/main.yml", color.Reset)
+	time.Sleep(2 * time.Second)
+	GenerateYmlClusterAndDatasotre(fullPath, usrvCenterIp, usrvCenterUsername, vCenter_login_pass, usrIP, esxiUsername, usrPassword)
+
+	ansCmd := exec.Command("ansible-playbook", "playbooks/create-cluster-datastore.yml")
+	ansCmd.Dir = fullPath
+	ansCmd.Stderr = os.Stderr
+	ansCmd.Stdout = os.Stdout
+
+	if err := ansCmd.Run(); err != nil {
+		panic(err)
+	} else {
+		fmt.Println(color.Green + "Create Cluster and Datastore successfully" + color.Reset)
+	}
+}
+
+func GenerateYmlClusterAndDatasotre(path, usrvCenterIp, usrvCenterUsername, vCenter_login_pass, usrIP, esxi_username, usrPassword string) {
+	dataStructure := struct {
+		VcenterIP            string
+		VcenterUsername      string
+		VcenterLoginPassword string
+		EsxiIp               string
+		EsxiUsername         string
+		EsxiPassword         string
+	}{usrvCenterIp,
+		usrvCenterUsername,
+		vCenter_login_pass,
+		usrIP,
+		esxi_username,
+		usrPassword,
+	}
+
+	data := `---
+vcenter_hostname: "{{ .VcenterIP }}"
+vcenter_username: "{{ .VcenterUsername }}"
+vcenter_password: "{{ .VcenterLoginPassword }}"
+
+datacenter_name: "Datacenter"
+cluster_name: "Cluster1"
+
+esxi_hostname: "{{ .EsxiIp }}"
+esxi_username: "{{ .EsxiUsername }}"
+esxi_password: "{{ .EsxiPassword }}"`
+
+	var buf bytes.Buffer
+
+	templateData := template.Must(template.New("yaml").Parse(data))
+
+	if err := templateData.Execute(&buf, dataStructure); err != nil {
+		panic(err)
+	}
+
+	fmt.Printf("%sWriting file into %s%s\n", color.Yellow, path, color.Reset)
+
+	os.WriteFile(path+"/roles/create-cluster-and-datastore-on-vCenter/vars/main.yml", buf.Bytes(), 0644)
+
+	time.Sleep(1 * time.Second)
+	fmt.Printf("%sSuccessfully writed on %s .%s\n", color.Green, path, color.Reset)
+	fmt.Println(color.Yellow + "Returning ..." + color.Reset)
+	time.Sleep(1 * time.Second)
+}
+
+// ==================================================================================== vCenter setup (create and copy Cluster ans Datastore) (END) ==========================================================================================
