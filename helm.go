@@ -16,9 +16,9 @@ import (
 	"text/template"
 	"time"
 
+	"github.com/AlecAivazis/survey/v2"
 	"github.com/TwiN/go-color"
 	"github.com/common-nighthawk/go-figure"
-	"github.com/manifoldco/promptui"
 	"github.com/terraform_runner/helper"
 	"github.com/terraform_runner/servers"
 )
@@ -44,9 +44,6 @@ var (
 	system_name_vCenter        string
 	vCenter_management_pass    string
 	vCenter_login_pass         string
-	usrApiUrl                  string
-	usrApiTokenId              string
-	usrApiTokenSecret          string
 	isoServer                  *http.Server
 )
 
@@ -328,96 +325,6 @@ server_iso_url: "{{ .ServerURL }}"`
 
 // ==================================================================================== Ansible injection (ESXI)  ==========================================================================================
 
-// func Ansible_injection_esxi(reader *bufio.Reader, wdir, currentDir, hostname, usrvCenterIp, prefix_netmask, vCenter_gateway, system_name_vCenter, vCenter_management_pass, vCenter_login_pass string) {
-// 	fmt.Println(color.Yellow + "Running Ansible for Configuring Esxi .." + color.Reset)
-// 	time.Sleep(1 * time.Second)
-
-// 	playbooks_path := currentDir + "/ansible-vmware-config/playbooks/"
-// 	parentAnsible := currentDir + "/ansible-vmware-config"
-// 	cmd := exec.Command("ansible-playbook", playbooks_path+"upload-iso-to-datastore.yml")
-// 	cmd.Dir = parentAnsible
-// 	cmd.Stdout = os.Stdout
-// 	cmd.Stderr = os.Stderr
-
-// 	if err := cmd.Run(); err != nil {
-// 		log.Fatal(err)
-// 	}
-
-// 	fmt.Println(color.Green + "Upload Successfully ..." + color.Reset)
-// 	time.Sleep(1 * time.Second)
-
-// 	fmt.Println(color.Green + "Creating ESXI ...." + color.Reset)
-// 	time.Sleep(1 * time.Second)
-// 	cmd2 := exec.Command("ansible-playbook", playbooks_path+"create-vm-on-vcenter.yml")
-// 	cmd2.Dir = parentAnsible
-// 	cmd2.Stdout = os.Stdout
-// 	cmd2.Stderr = os.Stderr
-
-// 	if err2 := cmd2.Run(); err2 != nil {
-// 		log.Fatal(err2)
-// 	}
-
-// 	fmt.Println(color.Green + "vCenter VM Deployed Successfully ..." + color.Reset)
-// 	time.Sleep(1 + time.Second)
-// }
-
-// func GenerateYmlvCenter(usrvCenterIp, usrvCenterUsername, prefix_netmask, vCenter_gateway, system_name_vCenter, vCenter_management_pass, vCenter_login_pass, wdir, currenDir string) {
-// 	dataStucture := struct {
-// 		VcenterIP             string
-// 		VcenterUsername       string
-// 		PrefixNetmask         string
-// 		VcenterGateway        string
-// 		SystemNameVcenter     string
-// 		VcenterManagementPass string
-// 		VcenterLoginPass      string
-// 	}{
-// 		usrvCenterIp,
-// 		usrvCenterUsername,
-// 		prefix_netmask,
-// 		vCenter_gateway,
-// 		system_name_vCenter,
-// 		vCenter_management_pass,
-// 		vCenter_login_pass,
-// 	}
-
-// 	data1_ := `---
-// vcenter_hostname: "{{ .VcenterIP }}"
-// vcenter_username: "{{ .VcenterUsername }}"
-// vcenter_password: "{{ .VcenterLoginPass }}"
-// validate_certs: false
-
-// datacenter_name: "Datacenter"
-// datastore_name: "datastore1"
-
-// local_iso_path: "../../esxi_installer/iso_files/custom-esxi-ks.iso"
-// datastore_iso_path: "custom-esxi-ks.iso"`
-
-// 	dataTemplate := template.Must(template.New("yaml").Parse(data))
-
-// 	var buf bytes.Buffer
-
-// 	if err := dataTemplate.Execute(&buf, dataStucture); err != nil {
-// 		panic(err)
-// 	}
-
-// 	fullPath1 := currenDir + "ansible-vmware-config/roles/upload-iso-to-datastore/vars/"
-// 	fullPath2 := currenDir + "ansible-vmware-config/roles/create-vm-on-vcenter/vars/"
-// 	filename := "main.yml"
-
-// 	fmt.Println(color.Yellow + "generating on ")
-// 	os.WriteFile(fullPath1+filename, buf.Bytes(), 0644)
-// 	fmt.Printf("\n%sGenerating %s  file ...%s", color.Yellow, filename, color.Reset)
-
-// 	time.Sleep(2 * time.Second)
-// 	fmt.Printf("\n%s%s generated in the path %s%s\n\n", color.Green, filename, fullPath, color.Reset)
-// }
-
-// asking user to install vCenter or not
-
-// func Exec_ansible() {
-// 	// implement soon
-// }
-
 func MinimalInputEsxi(reader *bufio.Reader, wdir, hostname string) {
 	currentDir, _ := CurrentDir()
 
@@ -427,25 +334,17 @@ func MinimalInputEsxi(reader *bufio.Reader, wdir, hostname string) {
 	fmt.Println(usrHostname, usrGateway)
 	fmt.Println(color.Yellow + "Enter you ESXI configs : \n" + color.Reset)
 
-	usrHostname = Ask("Enter ESXI Hostname")
-	usrIP = Ask("Enter ESXI IP Address")
-	usrPassword = AskPassword("Enter ESXI Password")
-	esxiUsername = Ask("Enter ESXI username (e.g. root)")
-	usrNetmask = Ask("Enter Netmask")
-	usrGateway = Ask("Enter ESXI Gateway")
-	usrVlan = Ask("Enter ESXI Management Network Vlan")
-	vmNic = Ask("Enter ESXI VM NIC to connect")
+
+	usrHostname = Ask("Enter ESXI Hostname : ", usrHostname)
+	usrIP = Ask("Enter ESXI IP Address : ", usrIP)
+	usrPassword = AskPassword("Enter ESXI Password : " , usrPassword)
+	esxiUsername = Ask("Enter ESXI username (e.g. root) : ", esxiUsername)
+	usrNetmask = Ask("Enter Netmask : ", usrNetmask)
+	usrGateway = Ask("Enter ESXI Gateway : ", usrGateway)
+	usrVlan = Ask("Enter ESXI Management Network Vlan : ", usrVlan)
+	vmNic = Ask("Enter ESXI VM NIC to connect : ", vmNic)
 	// usrHostname = helper.ReadRequired(reader, "\nEnter ESXI Hostname: ")
 	// usrIP = helper.ReadRequired(reader, "Enter ESXI IP Address: ")
-
-	// prompt := promptui.Prompt{
-	// 	Label: "Enter ESXI Password : ",
-	// 	Mask:  '*',
-	// }
-	// usrPassword , err := prompt.Run()
-	// if err != nil {
-	// 	panic(err)
-	// }
 
 	// usrPassword = helper.ReadRequired(reader, "Enter ESXI Password : ")
 	// esxiUsername = helper.ReadRequired(reader, "Enter ESXI username (e.g. root) : ")
@@ -460,42 +359,35 @@ func MinimalInputEsxi(reader *bufio.Reader, wdir, hostname string) {
 	Vcenter_setup(wdir, currentDir, hostname, reader)
 }
 
-func Ask(label string) string {
-	prompt := promptui.Prompt{
-		Label: label,
-		Validate: func(userinput string) error {
-			if len(userinput) == 0 {
-				return fmt.Errorf("cannot be empty")
-			}
-			return nil
-		},
+func Ask(label, iden string) string {
+	prompt := survey.Input{
+		Message: label,
 	}
 
-	result, err := prompt.Run()
-	if err != nil {
+	if err := survey.AskOne(
+		&prompt, 
+		&iden,
+		survey.WithValidator(survey.Required),
+	); err != nil {
 		panic(err)
 	}
 
-	return result
+	return iden
 }
-func AskPassword(label string) string {
-	prompt := promptui.Prompt{
-		Label: label,
-		Mask:  '*',
-		Validate: func(userinput string) error {
-			if len(userinput) == 0 {
-				return fmt.Errorf("Cannot be Empty")
-			}
-			return nil
-		},
+func AskPassword(label, iden string) string {
+	prompt := survey.Password{
+		Message: label,
 	}
 
-	result, err := prompt.Run()
-	if err != nil {
+	if err := survey.AskOne(
+		&prompt,
+		&iden,
+		survey.WithValidator(survey.Required),
+	); err != nil {
 		panic(err)
 	}
 
-	return result
+	return iden
 }
 
 // ==================================================================================== Ansible injection (ESXI) (END) ==========================================================================================
@@ -537,13 +429,13 @@ func Vcenter_setup(wdir, currentDir, hostname string, reader *bufio.Reader) {
 
 	}
 	// ---------------------end of switch---------------------------------
-	usrvCenterIp = Ask("Enter vCenter IP")
-	usrvCenterUsername = Ask("Enter Username of vCenter") + "@vsphere.local"
-	prefix_netmask = Ask("Enter Netmask (e.g. 24)")
-	vCenter_gateway = Ask("Enter vCenter Gateway")
-	system_name_vCenter = Ask("Enter system Name")
-	vCenter_management_pass = AskPassword("Enter vCenter Management Password")
-	vCenter_login_pass = AskPassword("Enter vCenter Login Password")
+	usrvCenterIp = Ask("Enter vCenter IP : " , usrvCenterIp)
+	usrvCenterUsername = Ask("Enter Username of vCenter : " , usrvCenterUsername) + "@vsphere.local"
+	prefix_netmask = Ask("Enter Netmask (e.g. 24) : " , prefix_netmask)
+	vCenter_gateway = Ask("Enter vCenter Gateway : " , vCenter_gateway)
+	system_name_vCenter = Ask("Enter system Name : " , system_name_vCenter)
+	vCenter_management_pass = AskPassword("Enter vCenter Management Password : " , vCenter_management_pass)
+	vCenter_login_pass = AskPassword("Enter vCenter Login Password : " , vCenter_login_pass)
 
 	// usrvCenterIp = helper.ReadRequired(reader, "Enter vCenter IP : ")
 	// usrvCenterUsername = helper.ReadRequired(reader, "Enter Username of vCenter : ") + "@vsphere.local"
@@ -597,7 +489,7 @@ func Vcenter_setup(wdir, currentDir, hostname string, reader *bufio.Reader) {
 			},
 		},
 	}
-	// fmt.Println(JsonData)
+
 	// creating json file from jsonFile_content
 	jsonBytes, err := json.MarshalIndent(JsonData, "", "  ")
 	if err != nil {
