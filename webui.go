@@ -14,7 +14,7 @@ import (
 func Webui(hostname string) {
 	figure.NewColorFigure("Webui" , "" , "purple" , true).Print()
 
-	fmt.Println(color.Cyan + "opening WebUi ..." + color.Reset)
+	fmt.Println(color.Cyan + "\nopening WebUi ..." + color.Reset)
 	time.Sleep(2 * time.Second)
 
 	currentPath , _ := CurrentDir()

@@ -16,7 +16,6 @@ import (
 	"text/template"
 	"time"
 
-	"github.com/AlecAivazis/survey/v2"
 	"github.com/TwiN/go-color"
 	"github.com/common-nighthawk/go-figure"
 	"github.com/terraform_runner/helper"
@@ -334,15 +333,14 @@ func MinimalInputEsxi(reader *bufio.Reader, wdir, hostname string) {
 	fmt.Println(usrHostname, usrGateway)
 	fmt.Println(color.Yellow + "Enter you ESXI configs : \n" + color.Reset)
 
-
-	usrHostname = Ask("Enter ESXI Hostname : ", usrHostname)
-	usrIP = Ask("Enter ESXI IP Address : ", usrIP)
-	usrPassword = AskPassword("Enter ESXI Password : " , usrPassword)
-	esxiUsername = Ask("Enter ESXI username (e.g. root) : ", esxiUsername)
-	usrNetmask = Ask("Enter Netmask : ", usrNetmask)
-	usrGateway = Ask("Enter ESXI Gateway : ", usrGateway)
-	usrVlan = Ask("Enter ESXI Management Network Vlan : ", usrVlan)
-	vmNic = Ask("Enter ESXI VM NIC to connect : ", vmNic)
+	usrHostname = helper.Ask("Enter ESXI Hostname : ", usrHostname)
+	usrIP = helper.Ask("Enter ESXI IP Address : ", usrIP)
+	usrPassword = helper.AskPassword("Enter ESXI Password : ", usrPassword)
+	esxiUsername = helper.Ask("Enter ESXI username (e.g. root) : ", esxiUsername)
+	usrNetmask = helper.Ask("Enter Netmask : ", usrNetmask)
+	usrGateway = helper.Ask("Enter ESXI Gateway : ", usrGateway)
+	usrVlan = helper.Ask("Enter ESXI Management Network Vlan : ", usrVlan)
+	vmNic = helper.Ask("Enter ESXI VM NIC to connect : ", vmNic)
 	// usrHostname = helper.ReadRequired(reader, "\nEnter ESXI Hostname: ")
 	// usrIP = helper.ReadRequired(reader, "Enter ESXI IP Address: ")
 
@@ -357,37 +355,6 @@ func MinimalInputEsxi(reader *bufio.Reader, wdir, hostname string) {
 	time.Sleep(1 * time.Second)
 
 	Vcenter_setup(wdir, currentDir, hostname, reader)
-}
-
-func Ask(label, iden string) string {
-	prompt := survey.Input{
-		Message: label,
-	}
-
-	if err := survey.AskOne(
-		&prompt, 
-		&iden,
-		survey.WithValidator(survey.Required),
-	); err != nil {
-		panic(err)
-	}
-
-	return iden
-}
-func AskPassword(label, iden string) string {
-	prompt := survey.Password{
-		Message: label,
-	}
-
-	if err := survey.AskOne(
-		&prompt,
-		&iden,
-		survey.WithValidator(survey.Required),
-	); err != nil {
-		panic(err)
-	}
-
-	return iden
 }
 
 // ==================================================================================== Ansible injection (ESXI) (END) ==========================================================================================
@@ -429,13 +396,13 @@ func Vcenter_setup(wdir, currentDir, hostname string, reader *bufio.Reader) {
 
 	}
 	// ---------------------end of switch---------------------------------
-	usrvCenterIp = Ask("Enter vCenter IP : " , usrvCenterIp)
-	usrvCenterUsername = Ask("Enter Username of vCenter : " , usrvCenterUsername) + "@vsphere.local"
-	prefix_netmask = Ask("Enter Netmask (e.g. 24) : " , prefix_netmask)
-	vCenter_gateway = Ask("Enter vCenter Gateway : " , vCenter_gateway)
-	system_name_vCenter = Ask("Enter system Name : " , system_name_vCenter)
-	vCenter_management_pass = AskPassword("Enter vCenter Management Password : " , vCenter_management_pass)
-	vCenter_login_pass = AskPassword("Enter vCenter Login Password : " , vCenter_login_pass)
+	usrvCenterIp = helper.Ask("Enter vCenter IP : ", usrvCenterIp)
+	usrvCenterUsername = helper.Ask("Enter Username of vCenter : ", usrvCenterUsername) + "@vsphere.local"
+	prefix_netmask = helper.Ask("Enter Netmask (e.g. 24) : ", prefix_netmask)
+	vCenter_gateway = helper.Ask("Enter vCenter Gateway : ", vCenter_gateway)
+	system_name_vCenter = helper.Ask("Enter system Name : ", system_name_vCenter)
+	vCenter_management_pass = helper.AskPassword("Enter vCenter Management Password : ", vCenter_management_pass)
+	vCenter_login_pass = helper.AskPassword("Enter vCenter Login Password : ", vCenter_login_pass)
 
 	// usrvCenterIp = helper.ReadRequired(reader, "Enter vCenter IP : ")
 	// usrvCenterUsername = helper.ReadRequired(reader, "Enter Username of vCenter : ") + "@vsphere.local"

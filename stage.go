@@ -61,7 +61,7 @@ func MainStage(wdir , hostname string, componentID int8) {
 		fmt.Println(color.Yellow + "\nWarning : choose one of the above options ..." + color.Reset)
 		fmt.Println(color.Yellow + "Returning to menu ..." + color.Reset)
 		time.Sleep(1 * time.Second)
-		Nozaros(hostname , wdir)
+		MainStage(wdir , hostname , componentID)
 	}
 }
 

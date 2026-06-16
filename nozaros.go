@@ -51,28 +51,31 @@ func Nozaros_configure(wdir string) {
 
 	fmt.Println()
 	fmt.Println(color.Yellow + "\n================" + color.Reset)
-	fmt.Println(color.Yellow + "\nOptions : " + color.Reset)
-	fmt.Println("1. create new VMs \n2. Modify existing VMs\n3. Delete VMs\n4. Generating Inventory.yml file\n5. Main menu\n6. Exit")
-	fmt.Print("\nSelect an option (1-5) : ")
-	optionStr, _ := reader.ReadString('\n')
-	optionStr = strings.TrimSpace(optionStr)
+	fmt.Println(color.Yellow + "\nOptions : \n" + color.Reset)
+	var choice []string
+	choice = []string{"create new VMs" , "Modify existing VMs" , "Delete VMs" , "Generating Inventory.yml file" , "Main menu" , "Exit"}
+	optionStr := helper.AskSelect(choice)
+	// fmt.Println("1. create new VMs \n2. Modify existing VMs\n3. Delete VMs\n4. Generating Inventory.yml file\n5. Main menu\n6. Exit")
+	// fmt.Print("\nSelect an option (1-5) : ")
+	// optionStr, _ := reader.ReadString('\n')
+	// optionStr = strings.TrimSpace(optionStr)
 
 	switch optionStr {
-	case "1":
+	case "create new VMs":
 		createNewVMs(reader, wdir)
-	case "2":
+	case "Modify existing VMs":
 		ModifyVMs(reader, wdir)
-	case "3":
+	case "Delete VMs":
 		DeleteVMs(reader, wdir)
-	case "4":
+	case "Generating Inventory.yml file":
 		Yml(wdir, vms)
 		time.Sleep(1 * time.Second)
 		Nozaros_configure(wdir)
-	case "5":
+	case "Main menu":
 		fmt.Println(color.Yellow + "\nReturning to main menu..." + color.Reset)
 		time.Sleep(1 * time.Second)
 		main()
-	case "6":
+	case "Exit":
 		fmt.Println("Exiting...")
 		time.Sleep(1 * time.Second)
 		os.Exit(0)

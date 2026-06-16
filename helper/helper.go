@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"strconv"
 	"strings"
+
+	"github.com/AlecAivazis/survey/v2"
 	"github.com/TwiN/go-color"
 )
 
@@ -60,4 +62,54 @@ func ReadInt(reader *bufio.Reader) (int, error) {
 	}
 
 	return num, nil
+}
+
+// ========================================================================= Ask Prompt and Password (survey package) ==================================================================
+
+func Ask(label, iden string) string {
+	prompt := survey.Input{
+		Message: label,
+	}
+
+	if err := survey.AskOne(
+		&prompt,
+		&iden,
+		survey.WithValidator(survey.Required),
+	); err != nil {
+		panic(err)
+	}
+
+	return iden
+}
+func AskPassword(label, iden string) string {
+	prompt := survey.Password{
+		Message: label,
+	}
+
+	if err := survey.AskOne(
+		&prompt,
+		&iden,
+		survey.WithValidator(survey.Required),
+	); err != nil {
+		panic(err)
+	}
+
+	return iden
+}
+
+func AskSelect(inputList []string) string {
+	var choice string
+	prompt := survey.Select{
+		Message: "choose between the Options :",
+		Options: inputList,
+	}
+
+	if err := survey.AskOne(
+		&prompt,
+		&choice,
+	); err != nil {
+		panic(err)
+	}
+
+	return choice
 }
