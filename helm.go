@@ -138,14 +138,23 @@ func ESXI_setup(hostname, wdir string, reader *bufio.Reader) {
 func Custom_iso_maker(wdir string, reader *bufio.Reader, isoName, isoPath, currentDir, hostname string) {
 	fmt.Printf(color.Yellow+"Using Custom Image maker for ISO : %s\n"+color.Reset, isoName)
 	time.Sleep(1 * time.Second)
+	fmt.Println()
+	usrHostname = helper.AskThHasDefaultVal("Enter ESXI Hostname:" , usrHostname , "esxi.example.org")
+	usrPassword = helper.AskPassword("Enter ESXI Password:" , usrPassword)
+	usrIP = helper.Ask("Enter ESXI IP Address:" , usrIP)
+	usrNetmask = helper.AskThHasDefaultVal("Enter Netmask:" , usrNetmask , "255.255.255.0")
+	usrGateway = helper.Ask("Enter ESXI Gateway:" , usrGateway)
+	usrVlan = helper.AskThHasDefaultVal("Enter ESXI Management Network Vlan:" , usrVlan , "0")
+	vmNic = helper.AskThHasDefaultVal("Enter ESXI VM NIC to connect:" , vmNic , "vmnic0")
 
-	usrHostname = ReadInfo(reader, "\nEnter ESXI Hostname ", "esxi.example.org")
-	usrPassword = ReadInfo(reader, "\nEnter ESXI Password ", "Aa@123321")
-	usrIP = ReadInfo(reader, "\nEnter ESXI IP Address ", "192.168.0.250")
-	usrNetmask = ReadInfo(reader, "\nEnter Netmask ", "255.255.255.0")
-	usrGateway = ReadInfo(reader, "\nEnter ESXI Gateway ", "192.168.0.254")
-	usrVlan = ReadInfo(reader, "\nEnter ESXI Management Network Vlan ", "0")
-	vmNic = ReadInfo(reader, "\nEnter ESXI VM NIC to connect ", "vmnic0")
+
+	// usrHostname = ReadInfo(reader, "\nEnter ESXI Hostname ", "esxi.example.org")
+	// usrPassword = ReadInfo(reader, "\nEnter ESXI Password ", "Aa@123321")
+	// usrIP = ReadInfo(reader, "\nEnter ESXI IP Address ", "192.168.0.250")
+	// usrNetmask = ReadInfo(reader, "\nEnter Netmask ", "255.255.255.0")
+	// usrGateway = ReadInfo(reader, "\nEnter ESXI Gateway ", "192.168.0.254")
+	// usrVlan = ReadInfo(reader, "\nEnter ESXI Management Network Vlan ", "0")
+	// vmNic = ReadInfo(reader, "\nEnter ESXI VM NIC to connect ", "vmnic0")
 
 	time.Sleep(1 * time.Second)
 	vars := map[string]string{
@@ -185,19 +194,19 @@ func Custom_iso_maker(wdir string, reader *bufio.Reader, isoName, isoPath, curre
 	// Terraform_proxmox(reader, wdir, currenDir, hostname)
 }
 
-func ReadInfo(reader *bufio.Reader, label, defaultValue string) string {
-	fmt.Printf("%s [default value => %s]: ", label, defaultValue)
+// func ReadInfo(reader *bufio.Reader, label, defaultValue string) string {
+// 	fmt.Printf("%s [default value => %s]: ", label, defaultValue)
 
-	input, _ := reader.ReadString('\n')
-	input = strings.TrimSpace(input)
+// 	input, _ := reader.ReadString('\n')
+// 	input = strings.TrimSpace(input)
 
-	// If user just pressed Enter
-	if input == "" {
-		return defaultValue
-	}
+// 	// If user just pressed Enter
+// 	if input == "" {
+// 		return defaultValue
+// 	}
 
-	return input
-}
+// 	return input
+// }
 
 func ServeViaHttp(hostname, wdir string, reader *bufio.Reader) {
 	// get local IP
@@ -512,7 +521,7 @@ func CreateClusterAndDataStoreOnVcneter(wdir, hostname string) {
 	time.Sleep(2 * time.Second)
 
 	currentPath, _ := CurrentDir()
-	fullPath := currentPath + "ansible-vmware-config"
+	fullPath := currentPath + "ansible/ansible-vmware-config"
 
 	fmt.Printf("%sGenerating vars.yml on path %s %s", color.Yellow, fullPath+"/roles/create-cluster-and-datastore-on-vCenter/vars/main.yml", color.Reset)
 	time.Sleep(2 * time.Second)

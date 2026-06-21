@@ -10,6 +10,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/AlecAivazis/survey/v2"
 	"github.com/TwiN/go-color"
 	"github.com/terraform_runner/helper"
 )
@@ -22,6 +23,15 @@ var (
 	ManagementNetworkIP       string
 	ManagementNetworkNetmask  string
 	vms                       []VM
+	VmName                    string
+	numCPUstr                 string
+	memoryGBstr               string
+	VmGateway                 string
+	VmDns                     string
+	dnsStr                    string
+	componentName             string
+	additionalNetChoice       string
+	numNetworkStr             string
 )
 
 type Network struct {
@@ -53,7 +63,7 @@ func Nozaros_configure(wdir string) {
 	fmt.Println(color.Yellow + "\n================" + color.Reset)
 	fmt.Println(color.Yellow + "\nOptions : \n" + color.Reset)
 	var choice []string
-	choice = []string{"create new VMs" , "Modify existing VMs" , "Delete VMs" , "Generating Inventory.yml file" , "Main menu" , "Exit"}
+	choice = []string{"create new VMs", "Modify existing VMs", "Delete VMs", "Generating Inventory.yml file", "Main menu", "Exit"}
 	optionStr := helper.AskSelect(choice)
 	// fmt.Println("1. create new VMs \n2. Modify existing VMs\n3. Delete VMs\n4. Generating Inventory.yml file\n5. Main menu\n6. Exit")
 	// fmt.Print("\nSelect an option (1-5) : ")
@@ -209,106 +219,165 @@ func readRequired(reader *bufio.Reader, label string) string {
 }
 
 func collectVM(reader *bufio.Reader) VM {
-	name := readRequired(reader, "Enter VM Name: ")
-	numCPUstr := readRequired(reader, "Enter Number of CPUs: ")
-	memoryGBstr := readRequired(reader, "Enter Memory in GB: ")
-	gateway := readRequired(reader, "Enter Gateway: ")
 
-	fmt.Print("Enter DNS servers : (Default : 1.1.1.1 , 1.0.0.1) ==> ")
-	dnsStr, _ := reader.ReadString('\n')
-	dnsStr = strings.TrimSpace(dnsStr)
-	fmt.Println("--------")
+	VmName = helper.Ask("Enter VM Name:", VmName)
+	numCPUstr = helper.Ask("Enter Number of CPUs:", numCPUstr)
+	memoryGBstr = helper.Ask("Enter Memory in GB:", memoryGBstr)
+	VmGateway = helper.Ask("Enter Gateway:", VmGateway)
+	componentName = helper.Ask("Enter Component Name:", componentName)
+	// VmName := readRequired(reader, "Enter VM Name: ")
+	// numCPUstr := readRequired(reader, "Enter Number of CPUs: ")
+	// memoryGBstr := readRequired(reader, "Enter Memory in GB: ")
+	// gateway := readRequired(reader, "Enter Gateway: ")
+
+	// fmt.Print("Enter DNS servers : (Default : 1.1.1.1 , 1.0.0.1) ==> ")
+	// dnsStr, _ := reader.ReadString('\n')
+	// dnsStr = strings.TrimSpace(dnsStr)
+	// fmt.Println("--------")
 
 	// generate hash
-	genHash := HashGenerator(name)
+	genHash := HashGenerator(VmName)
 	// Set default DNS servers if user input is empty
-	dns := []string{"1.1.1.1", "1.0.0.1"}
 
-	if dnsStr != "" {
-		dns = strings.Split(dnsStr, ",")
-		for i := range dns {
-			dns[i] = strings.TrimSpace(dns[i])
-		}
+	dnsStr = helper.AskThHasDefaultVal("Enter DNS servers:", dnsStr, "1.1.1.1 , 1.0.0.1")
+
+	splitDnsStr := strings.Split(dnsStr, ",")
+	for i := range splitDnsStr {
+		splitDnsStr[i] = strings.TrimSpace(splitDnsStr[i])
 	}
 
-	component := readRequired(reader, "Enter Component Name: ")
+	// dns := []string{"1.1.1.1", "1.0.0.1"}
+
+	// if dnsStr != "" {
+	// 	dns = strings.Split(dnsStr, ",")
+	// 	for i := range dns {
+	// 		dns[i] = strings.TrimSpace(dns[i])
+	// 	}
+	// }
+
+	// component := readRequired(reader, "Enter Component Name: ")
 
 	vm := VM{
 		ID:         genHash,
-		Name:       strings.TrimSpace(name),
+		Name:       strings.TrimSpace(VmName),
 		NumCPU:     helper.Atoi(numCPUstr),
 		MemoryGB:   helper.Atoi(memoryGBstr),
-		Gateway:    strings.TrimSpace(gateway),
-		DNSservers: dns,
-		Component:  component,
+		Gateway:    strings.TrimSpace(VmGateway),
+		DNSservers: splitDnsStr,
+		Component:  componentName,
 	}
 
 	// Collecting Management Network ===========================================================================================================
-	fmt.Println(color.Yellow + "Setting up the Management Network (VM Network Portgroup) ..." + color.Reset)
+	fmt.Println(color.Yellow + "\nSetting up the Management Network (VM Network Portgroup) ..." + color.Reset)
 
 	time.Sleep(1 * time.Second)
 
 	fmt.Print("\nEnter Management Network Name (default ==> VM Network) :  ")
-	ManagementNetworkName, _ = reader.ReadString('\n')
-	ManagementNetworkName = strings.TrimSpace(ManagementNetworkName)
-	fmt.Println("--------")
 
-	var GenHashNetwork string
+	ManagementNetworkName = helper.AskThHasDefaultVal("Enter Management Network Name:", ManagementNetworkName, "VM Network")
+	GenHashNetwork := HashGenerator(ManagementNetworkName)
+	ManagementNetworkIP = helper.Ask("Enter Management Network IP:", ManagementNetworkIP)
+	ManagementNetworkNetmask = helper.AskThHasDefaultVal("Enter Management Network Netmask:", ManagementNetworkNetmask, "24")
+	// ManagementNetworkName, _ = reader.ReadString('\n')
+	// ManagementNetworkName = strings.TrimSpace(ManagementNetworkName)
+	// fmt.Println("--------")
+	vm.Networks = append(vm.Networks, Network{
+		ID:      GenHashNetwork,
+		Name:    strings.TrimSpace(ManagementNetworkName),
+		IP:      strings.TrimSpace(ManagementNetworkIP),
+		Netmask: helper.Atoi(ManagementNetworkNetmask),
+	})
+	// var GenHashNetwork string
 
-	if ManagementNetworkName == "" {
-		ManagementNetworkName = "VM Network"
-		
-		GenHashNetwork = HashGenerator(ManagementNetworkName)
-		ManagementNetworkIP = readRequired(reader, "Enter Management Network IP : ")
-		ManagementNetworkNetmask = readRequired(reader, "Enter Management Network Netmask : ")
+	// if ManagementNetworkName == "" {
+	// 	ManagementNetworkName = "VM Network"
 
-		vm.Networks = append(vm.Networks, Network{
-			ID:      GenHashNetwork,
-			Name:    strings.TrimSpace(ManagementNetworkName),
-			IP:      strings.TrimSpace(ManagementNetworkIP),
-			Netmask: helper.Atoi(ManagementNetworkNetmask),
-		})
-	} else {
-		ManagementNetworkIP = readRequired(reader, "Enter Management Network IP : ")
-		ManagementNetworkNetmask = readRequired(reader, "Enter Management Network Netmask : ")
+	// 	GenHashNetwork = HashGenerator(ManagementNetworkName)
+	// 	ManagementNetworkIP = readRequired(reader, "Enter Management Network IP : ")
+	// 	ManagementNetworkNetmask = readRequired(reader, "Enter Management Network Netmask : ")
 
-		vm.Networks = append(vm.Networks, Network{
-			ID:      GenHashNetwork,
-			Name:    strings.TrimSpace(ManagementNetworkName),
-			IP:      strings.TrimSpace(ManagementNetworkIP),
-			Netmask: helper.Atoi(ManagementNetworkNetmask),
-		})
-	}
+	// 	vm.Networks = append(vm.Networks, Network{
+	// 		ID:      GenHashNetwork,
+	// 		Name:    strings.TrimSpace(ManagementNetworkName),
+	// 		IP:      strings.TrimSpace(ManagementNetworkIP),
+	// 		Netmask: helper.Atoi(ManagementNetworkNetmask),
+	// 	})
+	// } else {
+	// 	ManagementNetworkIP = readRequired(reader, "Enter Management Network IP : ")
+	// 	ManagementNetworkNetmask = readRequired(reader, "Enter Management Network Netmask : ")
+
+	// 	vm.Networks = append(vm.Networks, Network{
+	// 		ID:      GenHashNetwork,
+	// 		Name:    strings.TrimSpace(ManagementNetworkName),
+	// 		IP:      strings.TrimSpace(ManagementNetworkIP),
+	// 		Netmask: helper.Atoi(ManagementNetworkNetmask),
+	// 	})
+	// }
 
 	// end of collecting Management Network =====================================================================================================
 
 	fmt.Println(color.Yellow + "Do you want to add additional Networks (VLANs or Portgroups) ? " + color.Reset)
-	fmt.Print("Enter 'yes' or 'Enter' to add or 'no' or 'n' or press any key to skip: ")
+	// fmt.Print("Enter 'yes' or 'Enter' to add or 'no' or 'n' or press any key to skip: ")
 
-	additionalNetChoice, _ := reader.ReadString('\n')
-	additionalNetChoice = strings.TrimSpace(strings.ToLower(additionalNetChoice))
+	// create validator
+	Validator := func(ans interface{}) error {
+		value := strings.ToLower(strings.TrimSpace(ans.(string)))
 
-	if additionalNetChoice == "yes" || additionalNetChoice == "y" || additionalNetChoice == "" {
-		vm.Networks = append(vm.Networks, readAdditionalNetworks(reader)...)
-	} else {
-		fmt.Println(color.Yellow + "\nSkipping additional Networks..." + color.Reset)
+		switch value {
+		case "yes", "y", "Y", "":
+			vm.Networks = append(vm.Networks, readAdditionalNetworks(reader)...)
+		case "no", "n", "NO", "N":
+			return nil
+		default:
+			return fmt.Errorf("Undefined value")
+		}
+		return nil
 	}
+
+	prompt := survey.Input{
+		Message: "Enter 'yes' or 'Enter' to add or 'no' or 'n' or press any key to skip:",
+	}
+
+	err := survey.AskOne(
+		&prompt,
+		&additionalNetChoice,
+		survey.WithValidator(Validator),
+	)
+
+	if err != nil {
+		panic(err)
+	}
+	// additionalNetChoice, _ := reader.ReadString('\n')
+	// additionalNetChoice = strings.TrimSpace(strings.ToLower(additionalNetChoice))
+
+	// if additionalNetChoice == "yes" || additionalNetChoice == "y" || additionalNetChoice == "" {
+	// 	vm.Networks = append(vm.Networks, readAdditionalNetworks(reader)...)
+	// } else {
+	// 	fmt.Println(color.Yellow + "\nSkipping additional Networks..." + color.Reset)
+	// }
 
 	return vm
 }
 
 func readAdditionalNetworks(reader *bufio.Reader) []Network {
 	var vmNetworks []Network
-	fmt.Print(color.Yellow + "How many Networks do you want for your VMs ? " + color.Reset)
-	numNetworkStr, _ := reader.ReadString('\n')
+	fmt.Println(color.Bold + "\n\nadding additional networks ...\n" + color.Reset)
+	time.Sleep(1 * time.Second)
+	// fmt.Print(color.Yellow + "How many Networks do you want for your VMs ? " + color.Reset)
+
+	numNetworkStr = helper.Ask("How many Networks do you want for your VMs ?", numNetworkStr)
+	// numNetworkStr, _ := reader.ReadString('\n')
 	netCount := helper.Atoi(numNetworkStr)
 
 	for j := 0; j < netCount; j++ {
 
 		fmt.Printf(color.Yellow+"\n--- Network %d ---\n"+color.Reset, j+1)
-		additionalNetwork_name = readRequired(reader, "Network name: ")
-		additionalNetwork_ip = readRequired(reader, "Network IP: ")
-		additionalNetwork_netmask = readRequired(reader, "Network Netmask: ")
+		additionalNetwork_name = helper.Ask("Network name:", additionalNetwork_name)
+		additionalNetwork_ip = helper.Ask("Network IP:", additionalNetwork_ip)
+		additionalNetwork_netmask = helper.Ask("Network Netmask:", additionalNetwork_netmask)
+		// additionalNetwork_name = readRequired(reader, "Network name: ")
+		// additionalNetwork_ip = readRequired(reader, "Network IP: ")
+		// additionalNetwork_netmask = readRequired(reader, "Network Netmask: ")
 
 		GenHashAdditionNetwork := HashGenerator(additionalNetwork_name)
 		// Yml(additionalNetwork_ip)
@@ -326,7 +395,7 @@ func readAdditionalNetworks(reader *bufio.Reader) []Network {
 
 // =========================================================================== Modify VMs ==========================================================================
 func ModifyVMs(reader *bufio.Reader, wdir string) {
-	fmt.Println(color.Yellow + "\nfetching list of existings vms ..." + color.Reset)
+	fmt.Println(color.Bold + color.Yellow + "\nfetching list of existings vms ..." + color.Reset + color.Reset)
 	time.Sleep(1 * time.Second)
 	// loadExistingVMs(wdir)
 
@@ -367,6 +436,9 @@ func ModifyVMs(reader *bufio.Reader, wdir string) {
 	tfvars.VMs[vmIDindex] = editVMs(reader, tfvars.VMs[vmIDindex])
 
 	saveNewTFvars(tfvars, wdir)
+	fmt.Printf("\n%s%sUpdating VMs list ...%s%s\n" , color.Bold , color.Yellow , color.Reset , color.Reset)
+	time.Sleep(1 * time.Second)
+	ModifyVMs(reader , wdir)
 }
 
 func editVMs(reader *bufio.Reader, vm VM) VM {
@@ -444,7 +516,7 @@ func readNetworks(reader *bufio.Reader, network []Network) []Network {
 }
 
 func readOptionalValue(reader *bufio.Reader, label, current string) string {
-	fmt.Printf("%s [current value => %s]: ", label, current)
+	fmt.Printf("%s%s [current value => %s]: %s", color.Bold, label, current, color.Reset)
 	userInput, _ := reader.ReadString('\n')
 	userInput = strings.TrimSpace(userInput)
 
@@ -454,7 +526,7 @@ func readOptionalValue(reader *bufio.Reader, label, current string) string {
 	return userInput
 }
 func readOptionalINT(reader *bufio.Reader, label string, current int) int {
-	fmt.Printf("%s [current value => %d]: ", label, current)
+	fmt.Printf("%s%s [current value => %d]: %s", color.Bold, label, current, color.Reset)
 	userInput, _ := reader.ReadString('\n')
 	userInput = strings.TrimSpace(userInput)
 
@@ -464,7 +536,7 @@ func readOptionalINT(reader *bufio.Reader, label string, current int) int {
 	return helper.Atoi(userInput)
 }
 func readDNSserversValue(reader *bufio.Reader, label string, current []string) []string {
-	fmt.Printf("%s [current value => %s]: ", label, current)
+	fmt.Printf("%s%s [current value => %s]: %s", color.Bold, label, current, color.Reset)
 	userInput, _ := reader.ReadString('\n')
 	userInput = strings.TrimSpace(userInput)
 
@@ -554,9 +626,11 @@ func DeleteVMs(reader *bufio.Reader, wdir string) {
 
 	GettingVMsLists(tfvars)
 
-	fmt.Printf("\nEnter VM ID that you want to Delete : %s(enter 0 to return to menu)%s => ", color.Yellow, color.Reset)
+	// fmt.Printf("\nEnter VM ID that you want to Delete : %s(enter 0 to return to menu)%s => ", color.Yellow, color.Reset)
+	var vmID string
+	vmID = helper.Ask("Enter VM ID that you want to Delete : (enter 0 to return to menu) =>", vmID)
 	// vmID := helper.Atoi(readLine(bufio.NewReader(os.Stdin))) - 1
-	vmID, _ := reader.ReadString('\n')
+	// vmID, _ := reader.ReadString('\n')
 	vmID = strings.TrimSpace(vmID)
 	vmIDndex := helper.Atoi(vmID) - 1
 

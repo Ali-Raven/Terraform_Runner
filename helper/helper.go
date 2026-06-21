@@ -81,6 +81,38 @@ func Ask(label, iden string) string {
 
 	return iden
 }
+func AskThHasDefaultVal(label, iden , defaultVal string) string {
+	prompt := survey.Input{
+		Message: label,
+		Default: defaultVal,
+	}
+
+	if err := survey.AskOne(
+		&prompt,
+		&iden,
+		survey.WithValidator(survey.Required),
+	); err != nil {
+		panic(err)
+	}
+
+	return iden
+}
+func AskThHasDefaultValInt(label string, iden int, defaultVal int) int {
+	prompt := survey.Input{
+		Message: label,
+		Default: string(defaultVal),
+	}
+
+	if err := survey.AskOne(
+		&prompt,
+		&iden,
+		survey.WithValidator(survey.Required),
+	); err != nil {
+		panic(err)
+	}
+
+	return iden
+}
 func AskPassword(label, iden string) string {
 	prompt := survey.Password{
 		Message: label,

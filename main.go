@@ -8,8 +8,9 @@ import (
 	"github.com/common-nighthawk/go-figure"
 	"github.com/terraform_runner/helper"
 )
+
 var (
-	items []string
+	items  []string
 	choice string
 )
 
@@ -17,9 +18,9 @@ func main() {
 	if len(os.Args) < 2 {
 		// fmt.Printf("\nUsage : \n\tgo run <file> command \n\t./terraform command \n\nthe commands are: \n\t%s--Helm%s      Setting up the Esxi product \n\t%s--Nozaros%s   creating multiple VMs with diffrent ips \n\t%s--Oranos%s    creating multiple VLANs \n\t%s--Cyborg%s    Configuring and installing packages with Ansible \n\t%s--Webui%s\t\t    UI for all Configuration\n", color.Yellow, color.Reset, color.Yellow, color.Reset, color.Yellow, color.Reset, color.Yellow, color.Reset , color.Yellow , color.Reset)
 		// return
-		figure.NewColorFigure("BBDH DevOps", "", "cyan", true).Print()
-		fmt.Println(color.Cyan + "\nProjects :\n" + color.Reset)
-		items = []string{"Nozaros", "Oranos", "Helm", "Cyborg" , "Web UI", "Exit"}
+		figure.NewColorFigure("GoProvision", "", "cyan", true).Print()
+		fmt.Printf("\n\n%s%sProjects :\n%s%s\n", color.Bold, color.Cyan, color.Reset, color.Reset)
+		items = []string{"Nozaros", "Oranos", "Helm", "Cyborg", "Web UI", "Exit"}
 		choice = helper.AskSelect(items)
 	} else {
 		choice = os.Args[1]
@@ -36,21 +37,21 @@ func main() {
 		Helm(hostname, "/esxi_installer")
 		return
 	case "--Nozaros", "--nozaros", "Nozaros":
-		Nozaros(hostname, "/final_terraform")
+		Nozaros(hostname, "/terraform/final_terraform")
 		return
 	case "--Oranos", "--oranos", "Oranos":
-		Oranos(hostname, "/vlan_terraform")
+		Oranos(hostname, "/terraform/vlan_terraform")
 		return
 	case "--Cyborg", "--cyborg", "Cyborg":
-		Cyborg(hostname, "/ansible-core-deploy")
-	case "--Webui" , "Web UI":
+		Cyborg(hostname, "/ansible/ansible-core-deploy")
+	case "--Webui", "Web UI":
 		Webui(hostname)
 	case "Exit":
 		os.Exit(0)
-	case "--help", "-- help", "-h", "- h", "--h", "-- h" , "-H" , "--H":
+	case "--help", "-- help", "-h", "- h", "--h", "-- h", "-H", "--H":
 		showHelp()
 	default:
-		figure.NewColorFigure("BBDH DevOps", "", "cyan", true).Print()
+		figure.NewColorFigure("GoProvision", "", "cyan", true).Print()
 		fmt.Println(color.Yellow + "\n choose one of commands ..." + color.Reset)
 		// fmt.Println("\nUsage : \n\tgo run <file> command \n\t./terraform command \n\nthe commands are: \n\t--Nozaros creating multiple VMs with diffrent ips \n\t--Oranos  creating multiple VLANs \n\t--Moon    creating normal VMs")
 		fmt.Printf("\nUsage : \n\tgo run <file> command \n\t./terraform command \n\nthe commands are: \n\t%s--Helm%s      Setting up the Esxi product \n\t%s--Nozaros%s   creating multiple VMs with diffrent ips \n\t%s--Oranos%s    creating multiple VLANs \n\t%s--Cyborg%s    Configuring and installing packages with Ansible \n\t%s--Webui%s\t\t    UI for all Configuration \n", color.Yellow, color.Reset, color.Yellow, color.Reset, color.Yellow, color.Reset, color.Yellow, color.Reset, color.Yellow, color.Reset)
@@ -58,18 +59,19 @@ func main() {
 }
 
 func showHelp() {
-	fmt.Printf(`Terraform Runner is Automation Project for creating Dynamic and usable VMs , VLAN , and other amazing operation on vCenter (VMware Product).
+	fmt.Printf(`%s%sTerraform Runner is Automation Project for creating Dynamic and usable VMs , VLAN , and other amazing operation on vCenter (VMware Product).%s%s
 	
-Usage: 
+%sUsage:%s 
 	go run . [flags]
 	(e.g.) ./terraform_runner [flags]
 
-the flags are : 
+%sthe flags are :%s 
 
 	--Helm		Setting up the Esxi product		
 	--Nozaros	creating multiple VMs with diffrent ips
 	--Oranos	creating multiple VLANs
 	--Cyborg	Configuring and installing packages with Ansible
-	--Webui          	UI for all Configuration
- `)
+	--Webui     	UI for all Configuration
+ `, color.Bold, color.Yellow, color.Reset, color.Reset, color.Bold, color.Reset, color.Bold, color.Reset)
+
 }
