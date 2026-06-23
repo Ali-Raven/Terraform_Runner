@@ -32,6 +32,17 @@ var (
 	componentName             string
 	additionalNetChoice       string
 	numNetworkStr             string
+	componentsToConnect       []string
+)
+
+var (
+	MMEConnectedComps  []string = []string{"HSS1" , "HSS2" , "HSS3" , "SGWC1" , "SGWC2" , "SMF1" , "SMF2"}
+	HSSConnectedComps  []string = []string{"MME1" , "MME2" , "MME3" , "MME4" , "MME5" , "MME6" , "MME7" , "MME8" , "MME9" , "MME10" , "MME11" , "MME12" , "MME13"}
+	SGWCConnectedComps []string = []string{"MME1" , "MME2" , "MME3" , "MME4" , "MME5" , "MME6" , "MME7" , "MME8" , "MME9" , "MME10" , "MME11" , "MME12" , "MME13" , "SMF1" , "SMF2" , "SGWU1" , "SGWU2"}
+	SGWUConnectedComps []string = []string{"SGWC1" , "SGWC2" , "UPF1" , "UPF2"}
+	SMFConnectedComps  []string = []string{"SGWC1" , "SGWC2" , "PCRF" , "UPF1" , "UPF2"}
+	UPFConnectedComps  []string = []string{"SMF1" , "SMF2" , "SGWU1" , "SGWU2"}
+	PCRFConnectedComps []string = []string{"SMF1" , "SMF2"}
 )
 
 type Network struct {
@@ -49,6 +60,7 @@ type VM struct {
 	Gateway    string    `json:"gateway"`
 	DNSservers []string  `json:"dns_servers"`
 	Component  string    `json:"component"`
+	ComponentsToConnect []string `json:"componentsToConnect"`
 	Networks   []Network `json:"network_adaptors"`
 }
 
@@ -225,6 +237,25 @@ func collectVM(reader *bufio.Reader) VM {
 	memoryGBstr = helper.Ask("Enter Memory in GB:", memoryGBstr)
 	VmGateway = helper.Ask("Enter Gateway:", VmGateway)
 	componentName = helper.Ask("Enter Component Name:", componentName)
+
+	switch {
+	case strings.Contains(strings.ToUpper(componentName), "MME"):
+		componentsToConnect = helper.MultiSelect("which Components you want to Connect ?" , MMEConnectedComps)
+	case strings.Contains(strings.ToUpper(componentName) , "HSS"):
+		componentsToConnect = helper.MultiSelect("which Components you want to Connect ?" , HSSConnectedComps)
+	case strings.Contains(strings.ToUpper(componentName) , "SGWC"):
+		componentsToConnect = helper.MultiSelect("which Components you want to Connect ?" , SGWCConnectedComps)
+	case strings.Contains(strings.ToUpper(componentName) , "SGWU"):
+		componentsToConnect = helper.MultiSelect("which Components you want to Connect ?" , SGWUConnectedComps)
+	case strings.Contains(strings.ToUpper(componentName) , "SMF"):
+		componentsToConnect = helper.MultiSelect("which Components you want to Connect ?" , SMFConnectedComps)
+	case strings.Contains(strings.ToUpper(componentName) , "UPF"):
+		componentsToConnect = helper.MultiSelect("which Components you want to Connect ?" , UPFConnectedComps)
+	case strings.Contains(strings.ToUpper(componentName) , "PCRF"):
+		componentsToConnect = helper.MultiSelect("which Components you want to Connect ?" , PCRFConnectedComps)
+	default:
+
+	}
 	// VmName := readRequired(reader, "Enter VM Name: ")
 	// numCPUstr := readRequired(reader, "Enter Number of CPUs: ")
 	// memoryGBstr := readRequired(reader, "Enter Memory in GB: ")
@@ -265,6 +296,7 @@ func collectVM(reader *bufio.Reader) VM {
 		Gateway:    strings.TrimSpace(VmGateway),
 		DNSservers: splitDnsStr,
 		Component:  componentName,
+		ComponentsToConnect: componentsToConnect,
 	}
 
 	// Collecting Management Network ===========================================================================================================
@@ -433,15 +465,15 @@ func ModifyVMs(reader *bufio.Reader, wdir string) {
 	fmt.Printf("Modifying VM: %s (Functionality not yet implemented)\n", vmID)
 	time.Sleep(2 * time.Second)
 
-	tfvars.VMs[vmIDindex] = editVMs(reader, tfvars.VMs[vmIDindex])
+	tfvars.VMs[vmIDindex] = editVMs(reader, tfvars.VMs[vmIDindex] , wdir)
 
 	saveNewTFvars(tfvars, wdir)
-	fmt.Printf("\n%s%sUpdating VMs list ...%s%s\n" , color.Bold , color.Yellow , color.Reset , color.Reset)
+	fmt.Printf("\n%s%sUpdating VMs list ...%s%s\n", color.Bold, color.Yellow, color.Reset, color.Reset)
 	time.Sleep(1 * time.Second)
-	ModifyVMs(reader , wdir)
+	ModifyVMs(reader, wdir)
 }
 
-func editVMs(reader *bufio.Reader, vm VM) VM {
+func editVMs(reader *bufio.Reader, vm VM , wdir string) VM {
 	fmt.Println(color.Yellow + "\nPress ENTER to keep current value" + color.Reset)
 
 	vm.Name = readOptionalValue(reader, "VM Name : ", vm.Name)
@@ -450,13 +482,14 @@ func editVMs(reader *bufio.Reader, vm VM) VM {
 	vm.Gateway = readOptionalValue(reader, "Gateway : ", vm.Gateway)
 	vm.DNSservers = readDNSserversValue(reader, "DNS servers : ", vm.DNSservers)
 	vm.Component = readOptionalValue(reader, "Component Name : ", vm.Component)
-	vm.Networks = readNetworks(reader, vm.Networks)
+	vm.ComponentsToConnect = readDNSserversValue(reader , "Which component to Connect ?" , vm.ComponentsToConnect)
+	vm.Networks = readNetworks(reader, vm.Networks , wdir)
 
 	return vm
 }
-func readNetworks(reader *bufio.Reader, network []Network) []Network {
+func readNetworks(reader *bufio.Reader, network []Network , wdir string) []Network {
 	// condition for checking the length of network array
-	fmt.Println("\nNetwork Options : \n1. Modify Existing Networks value\n2. Add Network to the List\n3. Delete Network")
+	fmt.Println("\nNetwork Options : \n1. Modify Existing Networks value\n2. Add Network to the List\n3. Delete Network\n4. Update and Exit")
 
 	fmt.Print("\nEnter your choice : (1/2/3) ")
 	usrInput, _ := reader.ReadString('\n')
@@ -486,7 +519,8 @@ func readNetworks(reader *bufio.Reader, network []Network) []Network {
 		network = append(network[:id], network[id+1:]...)
 		fmt.Println(color.Green + "Network is removed Successfully" + color.Reset)
 		return network
-
+	case "4":
+		return network
 	}
 	if len(network) == 0 {
 		fmt.Println(color.Yellow + "No Networks to edit" + color.Reset)
@@ -592,18 +626,19 @@ func printVMBox(vm VM, index int) {
 	fmt.Printf("│ Gateway        : %-20s │\n", vm.Gateway)
 	fmt.Printf("│ DNS Servers    : %-20s │\n", strings.Join(vm.DNSservers, ","))
 	fmt.Printf("| Component Name : %-20s |\n", vm.Component)
-	fmt.Println("├──────────────────────────────────────┤")
-	fmt.Println("│ Networks                             │")
-	fmt.Println("├──────────────┬──────────────┬────────┤")
-	fmt.Println("│ Name         │ IP           │ Mask   │")
-	fmt.Println("├──────────────┼──────────────┼────────┤")
+	fmt.Printf("| ComponentToConnect : %1s        |\n", strings.Join(vm.ComponentsToConnect , ","))
+	fmt.Println("├───────────────────────────────────────┤")
+	fmt.Println("│ Networks                              │")
+	fmt.Println("├──────────────┬──────────────┬─────────┤")
+	fmt.Println("│ Name         │ IP           │ Mask    │")
+	fmt.Println("├──────────────┼──────────────┼─────────┤")
 
 	for _, n := range vm.Networks {
 		fmt.Printf("│ %-12s │ %-12s │ %-6d │\n",
 			n.Name, n.IP, n.Netmask)
 	}
 
-	fmt.Println("└──────────────┴──────────────┴────────┘")
+	fmt.Println("└──────────────┴──────────────┴──────── ┘")
 }
 
 // =========================================================================== Modify VMs (END) ==========================================================================

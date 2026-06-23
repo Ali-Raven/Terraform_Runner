@@ -145,3 +145,17 @@ func AskSelect(inputList []string) string {
 
 	return choice
 }
+
+func MultiSelect(label string , listOfItems []string) []string {
+	var selected []string
+
+	prompt := survey.MultiSelect{
+		Message: label,
+		Options: listOfItems,
+	}
+
+	if err := survey.AskOne(&prompt , &selected) ; err != nil {
+		panic(err)
+	}
+	return selected
+} 
