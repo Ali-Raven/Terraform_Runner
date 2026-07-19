@@ -81,7 +81,7 @@ func Ask(label, iden string) string {
 
 	return iden
 }
-func AskThHasDefaultVal(label, iden , defaultVal string) string {
+func AskThHasDefaultVal(label, iden, defaultVal string) string {
 	prompt := survey.Input{
 		Message: label,
 		Default: defaultVal,
@@ -146,7 +146,7 @@ func AskSelect(inputList []string) string {
 	return choice
 }
 
-func MultiSelect(label string , listOfItems []string) []string {
+func MultiSelect(label string, listOfItems []string) []string {
 	var selected []string
 
 	prompt := survey.MultiSelect{
@@ -154,8 +154,8 @@ func MultiSelect(label string , listOfItems []string) []string {
 		Options: listOfItems,
 	}
 
-	if err := survey.AskOne(&prompt , &selected) ; err != nil {
+	if err := survey.AskOne(&prompt, &selected); err != nil {
 		panic(err)
 	}
 	return selected
-} 
+}

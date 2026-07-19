@@ -2,28 +2,37 @@ package main
 
 import (
 	"bufio"
+	"context"
 	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
+	"net/url"
 	"os"
 	"strings"
 	"time"
 
 	"github.com/AlecAivazis/survey/v2"
 	"github.com/TwiN/go-color"
+	"github.com/joho/godotenv"
 	"github.com/terraform_runner/helper"
+	"github.com/vmware/govmomi"
+	"github.com/vmware/govmomi/find"
 )
 
 var (
 	additionalNetwork_name    string
 	additionalNetwork_ip      string
+	additionalNetwork_gateway string
 	additionalNetwork_netmask string
 	ManagementNetworkName     string
 	ManagementNetworkIP       string
 	ManagementNetworkNetmask  string
 	vms                       []VM
 	VmName                    string
+	VmTargetHost              string
+	DataStore                 string
+	ClusterName               string
 	numCPUstr                 string
 	memoryGBstr               string
 	VmGateway                 string
@@ -33,35 +42,46 @@ var (
 	additionalNetChoice       string
 	numNetworkStr             string
 	componentsToConnect       []string
+	backupComps               string
+	vipForBackupComps         string
+	BackupTargetHost          string
+	BackupDataStore           string
+	vCenterURL                string
+	vCenterUserName           string
+	vCenterPass               string
 )
 
 var (
-	MMEConnectedComps  []string = []string{"HSS1" , "HSS2" , "HSS3" , "SGWC1" , "SGWC2" , "SMF1" , "SMF2"}
-	HSSConnectedComps  []string = []string{"MME1" , "MME2" , "MME3" , "MME4" , "MME5" , "MME6" , "MME7" , "MME8" , "MME9" , "MME10" , "MME11" , "MME12" , "MME13"}
-	SGWCConnectedComps []string = []string{"MME1" , "MME2" , "MME3" , "MME4" , "MME5" , "MME6" , "MME7" , "MME8" , "MME9" , "MME10" , "MME11" , "MME12" , "MME13" , "SMF1" , "SMF2" , "SGWU1" , "SGWU2"}
-	SGWUConnectedComps []string = []string{"SGWC1" , "SGWC2" , "UPF1" , "UPF2"}
-	SMFConnectedComps  []string = []string{"SGWC1" , "SGWC2" , "PCRF" , "UPF1" , "UPF2"}
-	UPFConnectedComps  []string = []string{"SMF1" , "SMF2" , "SGWU1" , "SGWU2"}
-	PCRFConnectedComps []string = []string{"SMF1" , "SMF2"}
+	MMEConnectedComps  []string = []string{"HSS1", "HSS2", "HSS3", "HSS4", "HSS5", "SGWC1", "SGWC2", "SMF1", "SMF2"}
+	HSSConnectedComps  []string = []string{"MME1", "MME2", "MME3", "MME4", "MME5", "MME6", "MME7", "MME8", "MME9", "MME10", "MME11", "MME12", "MME13"}
+	SGWCConnectedComps []string = []string{"MME1", "MME2", "MME3", "MME4", "MME5", "MME6", "MME7", "MME8", "MME9", "MME10", "MME11", "MME12", "MME13", "SMF1", "SMF2", "SGWU1", "SGWU2"}
+	SGWUConnectedComps []string = []string{"SGWC1", "SGWC2", "UPF1", "UPF2"}
+	SMFConnectedComps  []string = []string{"SGWC1", "SGWC2", "PCRF1", "UPF1", "UPF2"}
+	UPFConnectedComps  []string = []string{"SMF1", "SMF2", "SGWU1", "SGWU2"}
+	PCRFConnectedComps []string = []string{"SMF1", "SMF2"}
 )
 
 type Network struct {
 	ID      string `json:"uuid"`
 	Name    string `json:"name"`
 	IP      string `json:"ip"`
+	Gateway string `json:"gateway"`
 	Netmask int    `json:"netmask"`
 }
 
 type VM struct {
-	ID         string    `json:"uuid"`
-	Name       string    `json:"name"`
-	NumCPU     int       `json:"num_cpus"`
-	MemoryGB   int       `json:"memory_gb"`
-	Gateway    string    `json:"gateway"`
-	DNSservers []string  `json:"dns_servers"`
-	Component  string    `json:"component"`
-	ComponentsToConnect []string `json:"componentsToConnect"`
-	Networks   []Network `json:"network_adaptors"`
+	ID         string `json:"uuid"`
+	Name       string `json:"name"`
+	TargetHost string `json:"target_host"`
+	DataStore  string `json:"datastore"`
+	// ClusterName         string    `json:"cluster_name"`
+	NumCPU              int       `json:"num_cpus"`
+	MemoryGB            int       `json:"memory_gb"`
+	Gateway             string    `json:"gateway"`
+	DNSservers          []string  `json:"dns_servers"`
+	Component           string    `json:"component"`
+	ComponentsToConnect []string  `json:"componentsToConnect"`
+	Networks            []Network `json:"network_adaptors"`
 }
 
 type TFvars struct {
@@ -71,16 +91,23 @@ type TFvars struct {
 func Nozaros_configure(wdir string) {
 	reader := bufio.NewReader(os.Stdin)
 
+	// getting vCenter server info
+	if err := godotenv.Load(); err != nil {
+		fmt.Printf("%s Can't read or load the vCenter Info , try again %s", color.Red, color.Reset)
+	}
+
+	vCenterURL = os.Getenv("vCenterURL")
+	vCenterUserName = os.Getenv("vCenterUserName")
+	vCenterPass = os.Getenv("vCenterPassword")
+
 	fmt.Println()
 	fmt.Println(color.Yellow + "\n================" + color.Reset)
 	fmt.Println(color.Yellow + "\nOptions : \n" + color.Reset)
 	var choice []string
-	choice = []string{"create new VMs", "Modify existing VMs", "Delete VMs", "Generating Inventory.yml file", "Main menu", "Exit"}
+	choice = []string{"create new VMs", "Modify existing VMs", "Delete VMs", "Generating Inventory.yml file", "Test enviroment", "Main menu", "Exit"}
 	optionStr := helper.AskSelect(choice)
 	// fmt.Println("1. create new VMs \n2. Modify existing VMs\n3. Delete VMs\n4. Generating Inventory.yml file\n5. Main menu\n6. Exit")
 	// fmt.Print("\nSelect an option (1-5) : ")
-	// optionStr, _ := reader.ReadString('\n')
-	// optionStr = strings.TrimSpace(optionStr)
 
 	switch optionStr {
 	case "create new VMs":
@@ -93,6 +120,17 @@ func Nozaros_configure(wdir string) {
 		Yml(wdir, vms)
 		time.Sleep(1 * time.Second)
 		Nozaros_configure(wdir)
+	case "Test enviroment":
+		err := godotenv.Load()
+		if err != nil {
+			panic(err)
+		}
+
+		vCneterURL := os.Getenv("vCenterURL")
+		vCenterUser := os.Getenv("vCenterUserName")
+		vCenterPass := os.Getenv("vCenterPassword")
+
+		fmt.Println(vCneterURL, vCenterUser, vCenterPass)
 	case "Main menu":
 		fmt.Println(color.Yellow + "\nReturning to main menu..." + color.Reset)
 		time.Sleep(1 * time.Second)
@@ -133,9 +171,20 @@ func createNewVMs(reader *bufio.Reader, wdir string) {
 			panic(errVM)
 		}
 		for i := 0; i < numVMcount; i++ {
+			fmt.Printf("%s%s Connecting to vCenter server ...%s%s" , color.Bold , color.Yellow , color.Reset , color.Reset)
+
+			ds, dErr := GetAllDatastoreName(vCenterURL, vCenterUserName, vCenterPass)
+			if dErr != nil {
+				fmt.Printf("Error: %v\n", dErr)
+				os.Exit(1)
+			}
 			fmt.Printf(color.Yellow+"\n--- VM %d ---\n"+color.Reset, i+1)
-			vm := collectVM(reader)
-			vms = append(vms, vm)
+
+			collected := collectVM(reader , ds)
+
+			for _, vm := range collected {
+				vms = append(vms, vm)
+			}
 		}
 
 		retrunedPreview := preview(vms, reader, wdir)
@@ -183,8 +232,12 @@ func preview(vms []VM, reader *bufio.Reader, wdir string) int {
 		return 0
 	case "2":
 		fmt.Println(color.Yellow + "\nRe-enter VM data...\n" + color.Reset)
-		vm := collectVM(reader)
-		vms = append(vms[:len(vms)-1], vm)
+
+		collected := collectVM(reader , )
+
+		for _, vm := range collected {
+			vms = append(vms, vm)
+		}
 
 		// fmt.Println(vms)
 		preview(vms, reader, wdir)
@@ -230,9 +283,76 @@ func readRequired(reader *bufio.Reader, label string) string {
 	}
 }
 
-func collectVM(reader *bufio.Reader) VM {
+func GetAllDatastoreName(vcURL, username, pass string) ([]string, error) {
+	ctx := context.Background()
+
+	// 1. Format the vCenter URL
+	u, err := url.Parse(fmt.Sprintf("https://%s:%s@%s/sdk", username, pass, vcURL))
+
+	if err != nil {
+		return nil, fmt.Errorf("invalid vCenter URL: %w", err)
+	}
+
+	// 2. Connect to vCenter
+	client, err := govmomi.NewClient(ctx, u, true)
+	if err != nil {
+		return nil, fmt.Errorf("failed to connect to vCenter: %w", err)
+	}
+	defer client.Logout(ctx)
+
+	// 3. Initialize the Finder
+	finder := find.NewFinder(client.Client, true)
+
+	// 4. Find the default datacenter to scope our search
+	dc, err := finder.DefaultDatacenter(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("failed to find default datacenter: %w", err)
+	}
+	finder.SetDatacenter(dc)
+
+	// 5. Find ALL datastores using the "*" wildcard
+	datastores, err := finder.DatastoreList(ctx, "*")
+	if err != nil {
+		return nil, fmt.Errorf("failed to list datastores: %w", err)
+	}
+
+	// 6. Extract the names into a simple string slice
+	var dsNames []string
+	for _, ds := range datastores {
+		dsNames = append(dsNames, ds.Name())
+	}
+
+	return dsNames, nil
+}
+
+func isVMNameIsCoreComponent(CompsConnectedItems []string) {
+	componentsToConnect = helper.MultiSelect("which Components you want to Connect ?", CompsConnectedItems)
+	backupComps = helper.Ask("Do you Want Backup Option for this Component ?", backupComps)
+	if backupComps == "y" {
+		vipForBackupComps = helper.Ask("Enter Your Management IP address for Backup Components :", vipForBackupComps)
+		BackupTargetHost = helper.Ask("Enter Target Host for Backup VM :", BackupTargetHost)
+		BackupDataStore = helper.Ask("Enter Datastore for Backup VM :", BackupDataStore)
+
+		// checking target host and datastore of backup vm  equallity to main VM
+		if BackupTargetHost == VmTargetHost || BackupDataStore == DataStore {
+			fmt.Printf("%sError : Backup Target host or Datastore can't be the same with main Target host or Datastore Name.%s\n", color.Red, color.Reset)
+			fmt.Println(color.Yellow+"try this section again with True value ", color.Reset)
+			fmt.Println(color.Yellow+"Returning ...", color.Reset)
+			time.Sleep(1 * time.Second)
+			isVMNameIsCoreComponent(CompsConnectedItems)
+		}
+	} else {
+		fmt.Println(color.Yellow + "Skipping ..." + color.Reset)
+		time.Sleep(700 * time.Millisecond)
+	}
+}
+
+func collectVM(reader *bufio.Reader , ds []string) []VM {
 
 	VmName = helper.Ask("Enter VM Name:", VmName)
+	VmTargetHost = helper.Ask("Enter Target Host of VM :", VmTargetHost)
+	DataStore = helper.AskSelect(ds)
+	// ClusterName = helper.AskSelect([]string{"Cluster1"})
 	numCPUstr = helper.Ask("Enter Number of CPUs:", numCPUstr)
 	memoryGBstr = helper.Ask("Enter Memory in GB:", memoryGBstr)
 	VmGateway = helper.Ask("Enter Gateway:", VmGateway)
@@ -240,31 +360,22 @@ func collectVM(reader *bufio.Reader) VM {
 
 	switch {
 	case strings.Contains(strings.ToUpper(componentName), "MME"):
-		componentsToConnect = helper.MultiSelect("which Components you want to Connect ?" , MMEConnectedComps)
-	case strings.Contains(strings.ToUpper(componentName) , "HSS"):
-		componentsToConnect = helper.MultiSelect("which Components you want to Connect ?" , HSSConnectedComps)
-	case strings.Contains(strings.ToUpper(componentName) , "SGWC"):
-		componentsToConnect = helper.MultiSelect("which Components you want to Connect ?" , SGWCConnectedComps)
-	case strings.Contains(strings.ToUpper(componentName) , "SGWU"):
-		componentsToConnect = helper.MultiSelect("which Components you want to Connect ?" , SGWUConnectedComps)
-	case strings.Contains(strings.ToUpper(componentName) , "SMF"):
-		componentsToConnect = helper.MultiSelect("which Components you want to Connect ?" , SMFConnectedComps)
-	case strings.Contains(strings.ToUpper(componentName) , "UPF"):
-		componentsToConnect = helper.MultiSelect("which Components you want to Connect ?" , UPFConnectedComps)
-	case strings.Contains(strings.ToUpper(componentName) , "PCRF"):
-		componentsToConnect = helper.MultiSelect("which Components you want to Connect ?" , PCRFConnectedComps)
+		isVMNameIsCoreComponent(MMEConnectedComps)
+	case strings.Contains(strings.ToUpper(componentName), "HSS"):
+		isVMNameIsCoreComponent(HSSConnectedComps)
+	case strings.Contains(strings.ToUpper(componentName), "SGWC"):
+		isVMNameIsCoreComponent(SGWCConnectedComps)
+	case strings.Contains(strings.ToUpper(componentName), "SGWU"):
+		isVMNameIsCoreComponent(SGWUConnectedComps)
+	case strings.Contains(strings.ToUpper(componentName), "SMF"):
+		isVMNameIsCoreComponent(SMFConnectedComps)
+	case strings.Contains(strings.ToUpper(componentName), "UPF"):
+		isVMNameIsCoreComponent(UPFConnectedComps)
+	case strings.Contains(strings.ToUpper(componentName), "PCRF"):
+		isVMNameIsCoreComponent(PCRFConnectedComps)
 	default:
 
 	}
-	// VmName := readRequired(reader, "Enter VM Name: ")
-	// numCPUstr := readRequired(reader, "Enter Number of CPUs: ")
-	// memoryGBstr := readRequired(reader, "Enter Memory in GB: ")
-	// gateway := readRequired(reader, "Enter Gateway: ")
-
-	// fmt.Print("Enter DNS servers : (Default : 1.1.1.1 , 1.0.0.1) ==> ")
-	// dnsStr, _ := reader.ReadString('\n')
-	// dnsStr = strings.TrimSpace(dnsStr)
-	// fmt.Println("--------")
 
 	// generate hash
 	genHash := HashGenerator(VmName)
@@ -277,25 +388,17 @@ func collectVM(reader *bufio.Reader) VM {
 		splitDnsStr[i] = strings.TrimSpace(splitDnsStr[i])
 	}
 
-	// dns := []string{"1.1.1.1", "1.0.0.1"}
-
-	// if dnsStr != "" {
-	// 	dns = strings.Split(dnsStr, ",")
-	// 	for i := range dns {
-	// 		dns[i] = strings.TrimSpace(dns[i])
-	// 	}
-	// }
-
-	// component := readRequired(reader, "Enter Component Name: ")
-
 	vm := VM{
 		ID:         genHash,
 		Name:       strings.TrimSpace(VmName),
-		NumCPU:     helper.Atoi(numCPUstr),
-		MemoryGB:   helper.Atoi(memoryGBstr),
-		Gateway:    strings.TrimSpace(VmGateway),
-		DNSservers: splitDnsStr,
-		Component:  componentName,
+		TargetHost: strings.TrimSpace(VmTargetHost),
+		DataStore:  strings.TrimSpace(DataStore),
+		// ClusterName:         strings.TrimSpace(ClusterName),
+		NumCPU:              helper.Atoi(numCPUstr),
+		MemoryGB:            helper.Atoi(memoryGBstr),
+		Gateway:             strings.TrimSpace(VmGateway),
+		DNSservers:          splitDnsStr,
+		Component:           componentName,
 		ComponentsToConnect: componentsToConnect,
 	}
 
@@ -319,37 +422,10 @@ func collectVM(reader *bufio.Reader) VM {
 		IP:      strings.TrimSpace(ManagementNetworkIP),
 		Netmask: helper.Atoi(ManagementNetworkNetmask),
 	})
-	// var GenHashNetwork string
-
-	// if ManagementNetworkName == "" {
-	// 	ManagementNetworkName = "VM Network"
-
-	// 	GenHashNetwork = HashGenerator(ManagementNetworkName)
-	// 	ManagementNetworkIP = readRequired(reader, "Enter Management Network IP : ")
-	// 	ManagementNetworkNetmask = readRequired(reader, "Enter Management Network Netmask : ")
-
-	// 	vm.Networks = append(vm.Networks, Network{
-	// 		ID:      GenHashNetwork,
-	// 		Name:    strings.TrimSpace(ManagementNetworkName),
-	// 		IP:      strings.TrimSpace(ManagementNetworkIP),
-	// 		Netmask: helper.Atoi(ManagementNetworkNetmask),
-	// 	})
-	// } else {
-	// 	ManagementNetworkIP = readRequired(reader, "Enter Management Network IP : ")
-	// 	ManagementNetworkNetmask = readRequired(reader, "Enter Management Network Netmask : ")
-
-	// 	vm.Networks = append(vm.Networks, Network{
-	// 		ID:      GenHashNetwork,
-	// 		Name:    strings.TrimSpace(ManagementNetworkName),
-	// 		IP:      strings.TrimSpace(ManagementNetworkIP),
-	// 		Netmask: helper.Atoi(ManagementNetworkNetmask),
-	// 	})
-	// }
 
 	// end of collecting Management Network =====================================================================================================
 
 	fmt.Println(color.Yellow + "Do you want to add additional Networks (VLANs or Portgroups) ? " + color.Reset)
-	// fmt.Print("Enter 'yes' or 'Enter' to add or 'no' or 'n' or press any key to skip: ")
 
 	// create validator
 	Validator := func(ans interface{}) error {
@@ -357,7 +433,7 @@ func collectVM(reader *bufio.Reader) VM {
 
 		switch value {
 		case "yes", "y", "Y", "":
-			vm.Networks = append(vm.Networks, readAdditionalNetworks(reader)...)
+			vm.Networks = append(vm.Networks, readAdditionalNetworks()...)
 		case "no", "n", "NO", "N":
 			return nil
 		default:
@@ -379,19 +455,50 @@ func collectVM(reader *bufio.Reader) VM {
 	if err != nil {
 		panic(err)
 	}
-	// additionalNetChoice, _ := reader.ReadString('\n')
-	// additionalNetChoice = strings.TrimSpace(strings.ToLower(additionalNetChoice))
 
-	// if additionalNetChoice == "yes" || additionalNetChoice == "y" || additionalNetChoice == "" {
-	// 	vm.Networks = append(vm.Networks, readAdditionalNetworks(reader)...)
-	// } else {
-	// 	fmt.Println(color.Yellow + "\nSkipping additional Networks..." + color.Reset)
-	// }
+	vmList := []VM{vm}
 
-	return vm
+	if backupComps == "y" && vipForBackupComps != "" {
+		backupVM := createBackupVM(vm, vipForBackupComps, BackupTargetHost, BackupDataStore)
+		vmList = append(vmList, backupVM)
+		fmt.Println(color.Green + "✓ Backup VM created successfully!" + color.Reset)
+	}
+
+	return vmList
 }
 
-func readAdditionalNetworks(reader *bufio.Reader) []Network {
+func createBackupVM(originalVM VM, vIP, bTarget, bDataStore string) VM {
+
+	backup := VM{
+		ID:         HashGenerator(originalVM.Name + "-backup"),
+		Name:       originalVM.Name + "-backup",
+		TargetHost: bTarget,
+		DataStore:  bDataStore,
+		// ClusterName:         originalVM.ClusterName,
+		NumCPU:              originalVM.NumCPU,
+		MemoryGB:            originalVM.MemoryGB,
+		Gateway:             originalVM.Gateway,
+		DNSservers:          originalVM.DNSservers,
+		Component:           originalVM.Component,
+		ComponentsToConnect: originalVM.ComponentsToConnect,
+	}
+
+	// Update only Management IP
+	for _, net := range originalVM.Networks {
+		newNet := net
+		if strings.Contains(strings.ToUpper(net.Name), ManagementNetworkName) ||
+			net.Name == ManagementNetworkName {
+			newNet.IP = strings.TrimSpace(vIP)
+			newNet.ID = HashGenerator(net.Name + "-backup")
+		}
+		backup.Networks = append(backup.Networks, newNet)
+	}
+
+	backup.Component = originalVM.Component + "(Backup)"
+	return backup
+}
+
+func readAdditionalNetworks() []Network {
 	var vmNetworks []Network
 	fmt.Println(color.Bold + "\n\nadding additional networks ...\n" + color.Reset)
 	time.Sleep(1 * time.Second)
@@ -406,10 +513,8 @@ func readAdditionalNetworks(reader *bufio.Reader) []Network {
 		fmt.Printf(color.Yellow+"\n--- Network %d ---\n"+color.Reset, j+1)
 		additionalNetwork_name = helper.Ask("Network name:", additionalNetwork_name)
 		additionalNetwork_ip = helper.Ask("Network IP:", additionalNetwork_ip)
+		additionalNetwork_gateway = helper.Ask("Network Gateway :", additionalNetwork_gateway)
 		additionalNetwork_netmask = helper.Ask("Network Netmask:", additionalNetwork_netmask)
-		// additionalNetwork_name = readRequired(reader, "Network name: ")
-		// additionalNetwork_ip = readRequired(reader, "Network IP: ")
-		// additionalNetwork_netmask = readRequired(reader, "Network Netmask: ")
 
 		GenHashAdditionNetwork := HashGenerator(additionalNetwork_name)
 		// Yml(additionalNetwork_ip)
@@ -417,6 +522,7 @@ func readAdditionalNetworks(reader *bufio.Reader) []Network {
 			ID:      GenHashAdditionNetwork,
 			Name:    strings.TrimSpace(additionalNetwork_name),
 			IP:      strings.TrimSpace(additionalNetwork_ip),
+			Gateway: strings.TrimSpace(additionalNetwork_gateway),
 			Netmask: helper.Atoi(additionalNetwork_netmask),
 		})
 	}
@@ -462,10 +568,10 @@ func ModifyVMs(reader *bufio.Reader, wdir string) {
 		Nozaros_configure(wdir)
 	}
 	// Further implementation to modify the VM with the given name
-	fmt.Printf("Modifying VM: %s (Functionality not yet implemented)\n", vmID)
-	time.Sleep(2 * time.Second)
+	fmt.Printf("Modifying VM:%s%s %s %s%s\n", color.Bold, color.Yellow, vmID, color.Reset, color.Reset)
+	time.Sleep(600 * time.Millisecond)
 
-	tfvars.VMs[vmIDindex] = editVMs(reader, tfvars.VMs[vmIDindex] , wdir)
+	tfvars.VMs[vmIDindex] = editVMs(reader, tfvars.VMs[vmIDindex], wdir)
 
 	saveNewTFvars(tfvars, wdir)
 	fmt.Printf("\n%s%sUpdating VMs list ...%s%s\n", color.Bold, color.Yellow, color.Reset, color.Reset)
@@ -473,21 +579,24 @@ func ModifyVMs(reader *bufio.Reader, wdir string) {
 	ModifyVMs(reader, wdir)
 }
 
-func editVMs(reader *bufio.Reader, vm VM , wdir string) VM {
+func editVMs(reader *bufio.Reader, vm VM, wdir string) VM {
 	fmt.Println(color.Yellow + "\nPress ENTER to keep current value" + color.Reset)
 
 	vm.Name = readOptionalValue(reader, "VM Name : ", vm.Name)
+	vm.TargetHost = readOptionalValue(reader, "VM Target Host : ", vm.TargetHost)
+	vm.DataStore = readOptionalValue(reader, "VM Datastore Name : ", vm.DataStore)
+	// vm.ClusterName = readOptionalValue(reader  , "VM Cluster Name : " , vm.ClusterName)
 	vm.NumCPU = readOptionalINT(reader, "Number of CPU : ", vm.NumCPU)
 	vm.MemoryGB = readOptionalINT(reader, "Memory (GB): ", vm.MemoryGB)
 	vm.Gateway = readOptionalValue(reader, "Gateway : ", vm.Gateway)
 	vm.DNSservers = readDNSserversValue(reader, "DNS servers : ", vm.DNSservers)
 	vm.Component = readOptionalValue(reader, "Component Name : ", vm.Component)
-	vm.ComponentsToConnect = readDNSserversValue(reader , "Which component to Connect ?" , vm.ComponentsToConnect)
-	vm.Networks = readNetworks(reader, vm.Networks , wdir)
+	vm.ComponentsToConnect = readDNSserversValue(reader, "Which component to Connect ?", vm.ComponentsToConnect)
+	vm.Networks = readNetworks(reader, vm.Networks, wdir)
 
 	return vm
 }
-func readNetworks(reader *bufio.Reader, network []Network , wdir string) []Network {
+func readNetworks(reader *bufio.Reader, network []Network, wdir string) []Network {
 	// condition for checking the length of network array
 	fmt.Println("\nNetwork Options : \n1. Modify Existing Networks value\n2. Add Network to the List\n3. Delete Network\n4. Update and Exit")
 
@@ -499,7 +608,7 @@ func readNetworks(reader *bufio.Reader, network []Network , wdir string) []Netwo
 	case "1":
 		break
 	case "2":
-		network = append(network, readAdditionalNetworks(reader)...)
+		network = append(network, readAdditionalNetworks()...)
 		fmt.Println(color.Green + "Network Added Successfully ." + color.Reset)
 		return network
 	case "3":
@@ -544,6 +653,7 @@ func readNetworks(reader *bufio.Reader, network []Network , wdir string) []Netwo
 
 	network[id].Name = readOptionalValue(reader, "Network Name : ", network[id].Name)
 	network[id].IP = readOptionalValue(reader, "Network IP : ", network[id].IP)
+	network[id].Gateway = readOptionalValue(reader, "Network Gateway : ", network[id].Gateway)
 	network[id].Netmask = readOptionalINT(reader, "Network Netmask : ", network[id].Netmask)
 
 	return network
@@ -617,28 +727,48 @@ func GettingVMsLists(tfvars TFvars) {
 	}
 }
 
+func truncate(s string, max int) string {
+	if len(s) > max {
+		return s[:max-3] + "..."
+	}
+	return fmt.Sprintf("%-*s", max, s)
+}
+
 func printVMBox(vm VM, index int) {
-	fmt.Println("┌──────────────────────────────────────┐")
-	fmt.Printf("│ %sVM ID          : %-20d %s│\n", color.Yellow, index+1, color.Reset)
-	fmt.Printf("│ VM Name        : %-20s │\n", vm.Name)
-	fmt.Printf("│ CPUs           : %-20d │\n", vm.NumCPU)
-	fmt.Printf("│ Memory (GB)    : %-20d │\n", vm.MemoryGB)
-	fmt.Printf("│ Gateway        : %-20s │\n", vm.Gateway)
-	fmt.Printf("│ DNS Servers    : %-20s │\n", strings.Join(vm.DNSservers, ","))
-	fmt.Printf("| Component Name : %-20s |\n", vm.Component)
-	fmt.Printf("| ComponentToConnect : %1s        |\n", strings.Join(vm.ComponentsToConnect , ","))
-	fmt.Println("├───────────────────────────────────────┤")
-	fmt.Println("│ Networks                              │")
-	fmt.Println("├──────────────┬──────────────┬─────────┤")
-	fmt.Println("│ Name         │ IP           │ Mask    │")
-	fmt.Println("├──────────────┼──────────────┼─────────┤")
+	// Total width: 52 chars. Inner width: 50 chars.
+	fmt.Println("┌──────────────────────────────────────────────────┐")
+
+	// Label column is 20 chars. Value column is 25 chars.
+	// We put color codes *outside* the padded variables so they don't break terminal spacing math.
+	fmt.Printf("│ %-20s : %s%-25d%s │\n", "VM ID", color.Yellow, index+1, color.Reset)
+	fmt.Printf("│ %-20s : %s │\n", "VM Name", truncate(vm.Name, 25))
+	fmt.Printf("│ %-20s : %s │\n", "Target Host", truncate(vm.TargetHost, 25))
+	fmt.Printf("│ %-20s : %s │\n", "Data Store", truncate(vm.DataStore, 25))
+	fmt.Printf("│ %-20s : %-25d │\n", "CPUs", vm.NumCPU)
+	fmt.Printf("│ %-20s : %-25d │\n", "Memory (GB)", vm.MemoryGB)
+	fmt.Printf("│ %-20s : %s │\n", "Gateway", truncate(vm.Gateway, 25))
+
+	dnsJoined := strings.Join(vm.DNSservers, ",")
+	fmt.Printf("│ %-20s : %s │\n", "DNS Servers", truncate(dnsJoined, 25))
+
+	fmt.Printf("│ %-20s : %s │\n", "Component Name", truncate(vm.Component, 25))
+
+	compJoined := strings.Join(vm.ComponentsToConnect, ",")
+	fmt.Printf("│ %-20s : %s │\n", "Components To Connect", truncate(compJoined, 25))
+
+	fmt.Println("├──────────────────────────────────────────────────┤")
+	fmt.Println("│ Networks                                         │")
+
+	// Columns: 16 + 18 + 14 = 48. Plus 2 inner dividers = 50 chars exactly.
+	fmt.Println("├────────────────┬──────────────────┬──────────────┤")
+	fmt.Println("│ Name           │ IP               │ Mask         │")
+	fmt.Println("├────────────────┼──────────────────┼──────────────┤")
 
 	for _, n := range vm.Networks {
-		fmt.Printf("│ %-12s │ %-12s │ %-6d │\n",
-			n.Name, n.IP, n.Netmask)
+		fmt.Printf("│ %-14s │ %-16s │ %-12d │\n", truncate(n.Name, 14), truncate(n.IP, 16), n.Netmask)
 	}
 
-	fmt.Println("└──────────────┴──────────────┴──────── ┘")
+	fmt.Println("└────────────────┴──────────────────┴──────────────┘")
 }
 
 // =========================================================================== Modify VMs (END) ==========================================================================

@@ -10,21 +10,20 @@ import (
 	"github.com/common-nighthawk/go-figure"
 )
 
-
 func Webui(hostname string) {
-	figure.NewColorFigure("Webui" , "" , "purple" , true).Print()
+	figure.NewColorFigure("Webui", "", "purple", true).Print()
 
 	fmt.Println(color.Cyan + "\nopening WebUi ..." + color.Reset)
 	time.Sleep(2 * time.Second)
 
-	currentPath , _ := CurrentDir()
+	currentPath, _ := CurrentDir()
 
 	execPy := exec.Command("./run_app")
 	execPy.Dir = currentPath + "/webui/"
 	execPy.Stderr = os.Stderr
 	execPy.Stdout = os.Stdout
 
-	if err := execPy.Run() ; err != nil {
-		panic(err)	
+	if err := execPy.Run(); err != nil {
+		panic(err)
 	}
 }

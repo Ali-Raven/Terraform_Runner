@@ -16,27 +16,27 @@ func Oranos(hostname, wdir string) {
 	figure.NewColorFigure("ORANOS", "", "cyan", true).Print()
 	fmt.Println(color.Blue + "\nUsing Oranos_starter" + color.Reset)
 	fmt.Println(color.Yellow + "VLAN creating mode ..." + color.Reset)
-	MainStage(wdir, hostname ,  1)
+	MainStage(wdir, hostname, 1)
 }
 
 func Nozaros(hostname, wdir string) {
 	figure.NewColorFigure("NOZAROS", "", "cyan", true).Print()
 	fmt.Println(color.Blue + "\nUsing Nozaros_starter" + color.Reset)
 	fmt.Println(color.Yellow + "multi_VM creating mode ..." + color.Reset)
-	MainStage(wdir, hostname , 2)
+	MainStage(wdir, hostname, 2)
 }
 
-func MainStage(wdir , hostname string, componentID int8) {
+func MainStage(wdir, hostname string, componentID int8) {
 	reader := bufio.NewReader(os.Stdin)
-	
+
 	time.Sleep(1 * time.Second)
 	fmt.Printf("\nOptions : \n\t\n\t1.Enter Configuration =>\t%suser configuration for VMs%s \n\t------------\t\n\t2.Plan =>\t\t\t%sShow changes required by the current configuration%s \n\t------------\t\n\t3.apply =>\t\t\t%sCreate or update infrastructure%s \n\t------------\t\n\t4.destroy =>\t\t\t%sDestroy previously-created infrastructure%s \n\t------------\t\n\t5.Exit", color.Yellow, color.Reset, color.Yellow, color.Reset, color.Yellow, color.Reset, color.Yellow, color.Reset)
 	fmt.Print("\n\nchoice: ")
-	userinput , _ := reader.ReadString('\n')
+	userinput, _ := reader.ReadString('\n')
 	userinput = strings.TrimSpace(userinput)
 
 	mode := "plan"
-	
+
 	switch userinput {
 	case "1":
 		switch componentID {
@@ -61,7 +61,7 @@ func MainStage(wdir , hostname string, componentID int8) {
 		fmt.Println(color.Yellow + "\nWarning : choose one of the above options ..." + color.Reset)
 		fmt.Println(color.Yellow + "Returning to menu ..." + color.Reset)
 		time.Sleep(1 * time.Second)
-		MainStage(wdir , hostname , componentID)
+		MainStage(wdir, hostname, componentID)
 	}
 }
 

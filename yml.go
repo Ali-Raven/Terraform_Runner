@@ -4,196 +4,44 @@ import (
 	"bytes"
 	"fmt"
 	"os"
+	"strings"
 	"text/template"
 	"time"
 
 	"github.com/TwiN/go-color"
+	generators "github.com/terraform_runner/Generators"
 )
 
-var (
-	ssh_defaultPort     int = 22
-	sgwc_managementPort int = ssh_defaultPort
-	sgwc_s11Port        int = 2123
-	sgwc_sxaPort        int = 8805
-	sgwc_s5cPort        int = 2124
-	sgwu_managementPort int = ssh_defaultPort
-	sgwu_sxaPort        int = 2152
-	sgwu_s5uPort        int = 8805
-	sgwu_s1uPort        int = 3333
-	upf_managementPort  int = ssh_defaultPort
-	upf_sxbPort         int = 8805
-	upf_sxuPort         int = 8806
-	upf_s5uPort         int = 2153
-	upf_SGI             string
-	upf_sgiPort         int = 2152
-	smf_managementPort  int = ssh_defaultPort
-	smf_gxPort          int = 2123
-	gx_secPort          int = 5868
-	smf_s5cPort         int = 8805
-	smf_sxbPort         int = 2153
-	smf_sxuPort         int = 8806
-	mme_s11Port         int = 2123
-	mme_s1apPort        int = 36412
-	mme_s6aPort         int = 2221
-	s6a_secPort         int = 5868
-	mme_managementPort  int = ssh_defaultPort
-	hss_managementPort  int = ssh_defaultPort
-	hss_s6aPort         int = 2223
-	pcrf_managementPort int = ssh_defaultPort
-	pcrf_gxPort         int = 4434
-	core_name           string
-	var_path            string
-	tls_path            string
-	inventory_hostname  string
-	diam_realm          string
-	flagErr             bool
-	diam_groupNames     string
-	non_diam_groupNames string
-)
+func NetworkGeneratorComps(CompsName string, VmList map[string]VM) map[string]generators.ComponentData {
+	CompsNetworksMaps := make(map[string]map[string]generators.NetworksStructure)
+	result := make(map[string]generators.ComponentData)
 
-type ComponentData struct {
-	Name                string
-	Networks            map[string]string
-	ComponentsToConnect []string
-}
+	for vmName, vm := range VmList {
 
-func BuildAllMMEs(componentData map[string]ComponentData) map[string]ComponentData {
-	// var mmes []ComponentData
-	mmesByName := make(map[string]ComponentData)
-
-	// fmt.Println(CompConnMMEs)
-	// time.Sleep(10000 * time.Second)
-	for name, nets := range componentData {
-		mme := ComponentData{
-			Name:                name,
-			Networks:            nets.Networks,
-			ComponentsToConnect: nets.ComponentsToConnect,
-		}
-		// mmes = append(mmes, mme)
-		mmesByName[name] = mme
-	}
-	return mmesByName
-}
-
-func BuildAllHSSs(componentData map[string]ComponentData) map[string]ComponentData {
-	hsssByName := make(map[string]ComponentData)
-
-	for name, nets := range componentData {
-		hss := ComponentData{
-			Name:                name,
-			Networks:            nets.Networks,
-			ComponentsToConnect: nets.ComponentsToConnect,
-		}
-		// hsss = append(hsss, hss)
-		hsssByName[name] = hss
-	}
-	return hsssByName
-}
-func BuildAllSGWCs(componentData map[string]ComponentData) map[string]ComponentData {
-	sgwcsByName := make(map[string]ComponentData)
-
-	for name, nets := range componentData {
-		sgwc := ComponentData{
-			Name:                name,
-			Networks:            nets.Networks,
-			ComponentsToConnect: nets.ComponentsToConnect,
-		}
-		// sgwcs = append(sgwcs, sgwc)
-		sgwcsByName[name] = sgwc
-	}
-	return sgwcsByName
-}
-func BuildAllSGWUs(componentData map[string]ComponentData) map[string]ComponentData {
-	sgwusByName := make(map[string]ComponentData)
-
-	for name, nets := range componentData {
-		sgwu := ComponentData{
-			Name:                name,
-			Networks:            nets.Networks,
-			ComponentsToConnect: nets.ComponentsToConnect,
-		}
-		// sgwus = append(sgwus, sgwu)
-		sgwusByName[name] = sgwu
-	}
-	return sgwusByName
-}
-func BuildAllSMFs(componentData map[string]ComponentData) map[string]ComponentData {
-	smfsByName := make(map[string]ComponentData)
-
-	for name, nets := range componentData {
-		smf := ComponentData{
-			Name:                name,
-			Networks:            nets.Networks,
-			ComponentsToConnect: nets.ComponentsToConnect,
-		}
-		// smfs = append(smfs, smf)
-		smfsByName[name] = smf
-	}
-	return smfsByName
-}
-func BuildAllUPFs(componentData map[string]ComponentData) map[string]ComponentData {
-	upfsByName := make(map[string]ComponentData)
-
-	for name, nets := range componentData {
-		upf := ComponentData{
-			Name:                name,
-			Networks:            nets.Networks,
-			ComponentsToConnect: nets.ComponentsToConnect,
-		}
-		// upfs = append(upfs, upf)
-		upfsByName[name] = upf
-	}
-	return upfsByName
-}
-func BuildAllPCRFs(componentData map[string]ComponentData) map[string]ComponentData {
-	pcrfsByName := make(map[string]ComponentData)
-
-	for name, nets := range componentData {
-		pcrf := ComponentData{
-			Name:                name,
-			Networks:            nets.Networks,
-			ComponentsToConnect: nets.ComponentsToConnect,
-		}
-		// pcrfs = append(pcrfs, pcrf)
-		pcrfsByName[name] = pcrf
-	}
-	return pcrfsByName
-}
-
-func NetworkGeneratorComps(indexCount int, CompsName string, VmList map[string]VM) map[string]ComponentData {
-	CompsNetworksMaps := make(map[string]map[string]string)
-	result := make(map[string]ComponentData)
-	var name string
-
-	for i := 1; i <= indexCount; i++ {
-		if CompsName == "PCRF" {
-			name = fmt.Sprintf("%s", CompsName)
-		} else {
-			name = fmt.Sprintf("%s%d", CompsName, i)
-		}
-
-		vm, exists := VmList[name]
-
-		if !exists {
-			fmt.Printf("%s%d not found in the %s list !", CompsName, indexCount, CompsName)
+		// only take VMs that belong to this component (MME, HSS, etc.)
+		if !strings.Contains(vmName, CompsName) {
 			continue
 		}
 
-		nets := make(map[string]string)
-		for _, netw := range vm.Networks {
-			nets[netw.Name] = netw.IP
-		}
-		// CompsNetworksMaps = append(CompsNetworksMaps, CompsNetwork)
-		CompsNetworksMaps[name] = nets
+		nets := make(map[string]generators.NetworksStructure)
 
-		result[name] = ComponentData{
-			Name:                name,
+		for _, netw := range vm.Networks {
+			nets[netw.Name] = generators.NetworksStructure{
+				ID:      netw.ID,
+				Name:    netw.Name,
+				IP:      netw.IP,
+				Gateway: netw.Gateway,
+				Subnet:  netw.Netmask,
+			}
+		}
+
+		CompsNetworksMaps[vmName] = nets
+
+		result[vmName] = generators.ComponentData{
+			Name:                vmName,
 			Networks:            nets,
 			ComponentsToConnect: vm.ComponentsToConnect,
 		}
-
-		// fmt.Println(CompConn)
-		// time.Sleep(1 * time.Second)
 	}
 
 	return result
@@ -216,10 +64,10 @@ func Yml(wdir string, vms []VM) {
 		if len(vms[i].Networks) < 2 {
 			fmt.Printf("%sError : not enough networks interface for %s%s\n", color.Red, vms[i].Name, color.Reset)
 			time.Sleep(300 * time.Millisecond)
-			flagErr = true
+			FlagErr = true
 		}
 	}
-	if flagErr == true {
+	if FlagErr == true {
 		return
 	}
 
@@ -227,189 +75,52 @@ func Yml(wdir string, vms []VM) {
 	VmList := make(map[string]VM)
 	for _, name := range vms {
 		VmList[name.Name] = name
+
 	}
 
-	time.Sleep(1 * time.Second)
+	CompsMapsMME := NetworkGeneratorComps("MME", VmList)
+	CompsMapsHSS := NetworkGeneratorComps("HSS", VmList)
+	CompsMapSGWC := NetworkGeneratorComps("SGWC", VmList)
+	CompsMapSGWU := NetworkGeneratorComps("SGWU", VmList)
+	CompsMapSMF := NetworkGeneratorComps("SMF", VmList)
+	CompsMapUPF := NetworkGeneratorComps("UPF", VmList)
+	CompsMapPCRF := NetworkGeneratorComps("PCRF", VmList)
 
-	CompsMapsMME := NetworkGeneratorComps(13, "MME", VmList)
-	CompsMapsHSS := NetworkGeneratorComps(3, "HSS", VmList)
-	CompsMapSGWC := NetworkGeneratorComps(2, "SGWC", VmList)
-	CompsMapSGWU := NetworkGeneratorComps(2, "SGWU", VmList)
-	CompsMapSMF := NetworkGeneratorComps(2, "SMF", VmList)
-	CompsMapUPF := NetworkGeneratorComps(2, "UPF", VmList)
-	CompsMapPCRF := NetworkGeneratorComps(1, "PCRF", VmList)
+	mmesByName := generators.BuildAllMMEs(CompsMapsMME)
+	hsssByName := generators.BuildAllHSSs(CompsMapsHSS)
+	sgwcsByName := generators.BuildAllSGWCs(CompsMapSGWC)
+	sgwusByName := generators.BuildAllSGWUs(CompsMapSGWU)
+	smfsByName := generators.BuildAllSMFs(CompsMapSMF)
+	upfsByName := generators.BuildAllUPFs(CompsMapUPF)
+	pcrfsByName := generators.BuildAllPCRFs(CompsMapPCRF)
 
-	mmesByName := BuildAllMMEs(CompsMapsMME)
-	hsssByName := BuildAllHSSs(CompsMapsHSS)
-	sgwcsByName := BuildAllSGWCs(CompsMapSGWC)
-	sgwusByName := BuildAllSGWUs(CompsMapSGWU)
-	smfsByName := BuildAllSMFs(CompsMapSMF)
-	upfsByName := BuildAllUPFs(CompsMapUPF)
-	pcrfsByName := BuildAllPCRFs(CompsMapPCRF)
+	// fmt.Println(pcrfsByName)
+	// time.Sleep(10000 * time.Second)
 
-	core_name = "{{ core_name }}"
-	var_path = "/var/log/" + core_name + "/"
-	tls_path = "/etc/" + core_name + "/tls/"
-	inventory_hostname = "{{ inventory_hostname }}"
-	diam_groupNames = "{{ group_names[1] }}"
-	non_diam_groupNames = "{{ group_names[0] }}"
-	var_path_diameter := "/etc/" + core_name + "/freeDiameter/"
-	diam_realm = "epc.mnc{{ plmn.mnc }}.mcc{{ plmn.mcc }}.3gppnetwork.org"
+	Core_Name = "bbdh"
+	Var_path = "/var/log/" + Core_Name + "/"
+	Tls_path = "/etc/" + Core_Name + "/tls/"
+	Inventory_hostname = "{{ inventory_hostname }}"
+	Diam_groupNames = "{{ group_names[1] }}"
+	Non_diam_groupNames = "{{ group_names[0] }}"
+	Var_path_diameter = "/etc/" + Core_Name + "/freeDiameter/"
+	Diam_Realm = "epc.mnc{{ plmn.mnc }}.mcc{{ plmn.mcc }}.3gppnetwork.org"
+	Var_path_Comps = "/var/log/{{ core_name }}/{{ group_names[0] }}.log"
 
-	data := struct {
-		SGWC_managementIP       string
-		SGWC_managementPort     int
-		SGWC_s11                string
-		SGWC_s11Port            int
-		SGWC_sxa                string
-		SGWC_sxaPort            int
-		SGWC_s5c                string
-		SGWC_s5cPort            int
-		SGWC_componentToConnect []string
-		MME_s11                 string
-		MME_s11Port             int
-		MME_managementIP        string
-		MME_managementPort      int
-		MME_s1ap                string
-		MME_s1apPort            int
-		MME_s6a                 string
-		MME_s6aPort             int
-		MME1_componentToConnect []string
-		SGWU_sxa                string
-		SGWU_sxaPort            int
-		SGWU_s5u                string
-		SGWU_s5uPort            int
-		SGWU_s1u                string
-		SGWU_s1uPort            int
-		SGWU_managementIP       string
-		SGWU_managementPort     int
-		SGWU_componentToConnect []string
-		SMF_managementIP        string
-		SMF_managementPort      int
-		SMF_gx                  string
-		SMF_gxPort              int
-		SMF_s5c                 string
-		SMF_s5cPort             int
-		SMF_sxb                 string
-		SMF_sxbPort             int
-		SMF_sxu                 string
-		SMF_sxuPort             int
-		SMF_componentToConnect  []string
-		UPF_managementIP        string
-		UPF_managementPort      int
-		UPF_sxb                 string
-		UPF_sxbPort             int
-		UPF_sxu                 string
-		UPF_sxuPort             int
-		UPF_s5u                 string
-		UPF_s5uPort             int
-		UPF_sgi                 string
-		UPF_sgiPort             int
-		UPF_componentToConnect  []string
-		HSS_managementIP        string
-		HSS_managementPort      int
-		HSS_s6a                 string
-		HSS_s6aPort             int
-		HSS_componentToConnect  []string
-		PCRF_managementIP       string
-		PCRF_managementPort     int
-		PCRF_gx                 string
-		PCRF_gxPort             int
-		PCRF_componentToConnect []string
-		Core_name               string
-		Var_path                string
-		Tls_path                string
-		Inventory_hostname      string
-		Diam_groupNames         string
-		Non_diam_groupNames     string
-		Diameter_path           string
-		Diam_Realm              string
-		Gx_secPort              int
-		S6a_secPort             int
-	}{sgwcsByName["SGWC1"].Networks["VM Network"],
-		sgwc_managementPort,
-		sgwcsByName["SGWC1"].Networks["s11-sgwc1"],
-		sgwc_s11Port,
-		sgwcsByName["SGWC1"].Networks["sxa-sgwc1"],
-		sgwc_sxaPort,
-		sgwcsByName["SGWC1"].Networks["s5c-sgwc1"],
-		sgwc_s5cPort,
-		sgwcsByName["SGWC1"].ComponentsToConnect,
-		mmesByName["MME1"].Networks["s11-mme1"],
-		mme_s11Port,
-		mmesByName["MME1"].Networks["VM Network"],
-		mme_managementPort,
-		mmesByName["MME1"].Networks["s1ap-mme1"],
-		mme_s1apPort,
-		mmesByName["MME1"].Networks["s6a-mme1"],
-		mme_s6aPort,
-		mmesByName["MME1"].ComponentsToConnect,
-		sgwusByName["SGWU1"].Networks["sxa-sgwu1"],
-		sgwu_sxaPort,
-		sgwusByName["SGWU1"].Networks["s5u-sgwu1"],
-		sgwu_s5uPort,
-		sgwusByName["SGWU1"].Networks["s1u-sgwu1"],
-		sgwu_s1uPort,
-		sgwusByName["SGWU1"].Networks["VM Network"],
-		sgwu_managementPort,
-		sgwusByName["SGWU1"].ComponentsToConnect,
-		smfsByName["SMF1"].Networks["VM Network"],
-		smf_managementPort,
-		smfsByName["SMF1"].Networks["gx-smf1"],
-		smf_gxPort,
-		smfsByName["SMF1"].Networks["s5c-smf1"],
-		smf_s5cPort,
-		smfsByName["SMF1"].Networks["sxb-smf1"],
-		smf_sxbPort,
-		smfsByName["SMF1"].Networks["sxu-smf1"],
-		smf_sxuPort,
-		smfsByName["SMF1"].ComponentsToConnect,
-		upfsByName["UPF1"].Networks["VM Network"],
-		upf_managementPort,
-		upfsByName["UPF1"].Networks["sxb-upf1"],
-		upf_sxbPort,
-		upfsByName["UPF1"].Networks["sxu-upf1"],
-		upf_sxuPort,
-		upfsByName["UPF1"].Networks["s5u-upf1"],
-		upf_s5uPort,
-		upf_SGI,
-		upf_sgiPort,
-		upfsByName["UPF1"].ComponentsToConnect,
-		hsssByName["HSS1"].Networks["VM Network"],
-		hss_managementPort,
-		hsssByName["HSS1"].Networks["s6a-hss1"],
-		hss_s6aPort,
-		hsssByName["HSS1"].ComponentsToConnect,
-		pcrfsByName["PCRF"].Networks["VM Network"],
-		pcrf_managementPort,
-		pcrfsByName["PCRF"].Networks["gx-pcrf"],
-		pcrf_gxPort,
-		pcrfsByName["PCRF"].ComponentsToConnect,
-		core_name,
-		var_path,
-		tls_path,
-		inventory_hostname,
-		diam_groupNames,
-		non_diam_groupNames,
-		var_path_diameter,
-		diam_realm,
-		gx_secPort,
-		s6a_secPort,
-	}
+	// calling Data function
 
-	// fmt.Printf("%#v\n", data.MME1_componentToConnect)
-	// fmt.Printf("len=%d\n", len(data.MME1_componentToConnect))
+	givenDataTemplate := Data(mmesByName, hsssByName, sgwcsByName, sgwusByName, smfsByName, upfsByName, pcrfsByName)
 
-	// time.Sleep(1000 * time.Second)
 	yamlData := `all:
   vars:
-    core_name: bbdh
-    db_uri: mongodb://localhost/{{ .Core_name }}
-    configs_path: /etc/{{ .Core_name }}
-    var_path: /var/log/{{ .Core_name }}/
-    var_path_diameter: /etc/{{ .Core_name }}/freeDiameter/
-    tls_path: /etc/{{ .Core_name }}/tls/ 
+    core_name: "{{ .Core_Name }}"
+    db_uri: mongodb://localhost/{{ .Core_Name }}
+    configs_path: /etc/{{ .Core_Name }}
+    var_path: {{ .Var_path }}
+    var_path_diameter: {{ .Var_path_diameter }}
+    tls_path: {{ .Tls_path }}
     diam_lib_dir: /usr/lib
+    user: {{ .User }}
     max_ue: 1024
     # PLMN that use for most of the components
     plmn:
@@ -418,187 +129,407 @@ func Yml(wdir string, vms []VM) {
     diam_realm: {{ .Diam_Realm }}
 
   children:
+    # ============================================================
+    # SGWC CLUSTER
+    # ============================================================
     sgwc:
-      hosts:
-        sgwc1:
-          ansible_host: {{ .SGWC_managementIP }}
-          managementPort: {{ .SGWC_managementPort }}
-          ansible_user: mos
-          ansible_password: q 
-          ansible_become_pass: q
-          logger: "{{ .Var_path }}{{ .Non_diam_groupNames }}.log"
-          s11_addr: {{ .SGWC_s11 }}
-          s11_port: {{ .SGWC_s11Port }}
-          s5c_addr: {{ .SGWC_s5c }}
-          s5c_port: {{ .SGWC_s5cPort }}
-          sxa_addr: {{ .SGWC_sxa }}
-          sxa_port: {{ .SGWC_sxaPort }}
-          components:
-          {{- range .SGWC_componentToConnect }}
-            - {{ . }}
-          {{- end }}
-    sgwu:
-      hosts:
-        sgwu1:
-          ansible_host: {{ .SGWU_managementIP }}
-          managementPort: {{ .SGWU_managementPort }}
-          ansible_user: mos
-          ansible_password: q 
-          ansible_become_pass: q
-          logger: "{{ .Var_path }}{{ .Non_diam_groupNames }}.log"
-          s5u_addr: {{ .SGWU_s5u }}
-          s5u_port: {{ .SGWU_s5uPort }}
-          sxa_addr: {{ .SGWU_sxa }}
-          sxa_port: {{ .SGWU_sxaPort }}
-          s1u_addr: {{ .SGWU_s1u }}
-          s1u_port: {{ .SGWU_s1uPort }}
-    upf:
-      hosts:
-        upf1:
-          ansible_host: {{ .UPF_managementIP }}
-          managementPort: {{ .UPF_managementPort }}
-          ansible_user: mos
-          ansible_password: q 
-          ansible_become_pass: q
-          logger: "{{ .Var_path }}{{ .Non_diam_groupNames }}.log"
-          sxb_addr: {{ .UPF_sxb }}
-          sxb_port: {{ .UPF_sxbPort }}
-          sxu_addr: {{ .UPF_sxu }}
-          sxu_port: {{ .UPF_sxuPort }}
-          s5u_addr: {{ .UPF_s5u }}
-          s5u_port: {{ .UPF_s5uPort }}
-          sgi_addr: {{ .UPF_sgi }}
-          sgi_port: {{ .UPF_sgiPort }}
-          subnet:
-              addr: 10.45.0.1/16
-              dev: ogstun
-              apn: internet
-          smf_addr: {{ .SMF_managementIP }}
+      children:
+        {{- range $i, $c := .SGWCsCluster }}
+        sgwc{{ add $i 1 }}_cluster:
+          hosts:
+            sgwc{{ add $i 1 }}:
+              ansible_host: {{ $c.Master.ANSIBLE_HOST }}
+              managementPort: {{ $c.Master.ManagementPort }}
+              ansible_user: {{ $c.Master.User }}
+              ansible_password: q
+              ansible_become_pass: q
+              keepalived_role: MASTER
+              keepalived_priority: 101
 
-    # all diameter peers metagroup
+            sgwc{{ add $i 1 }}_backup:
+              ansible_host: {{ $c.Backup.ANSIBLE_HOST }}
+              managementPort: 22
+              ansible_user: {{ $c.Backup.User }}
+              ansible_password: q
+              ansible_become_pass: q
+              keepalived_role: BACKUP
+              keepalived_priority: 100
+
+          vars:
+            logger: "{{ $.Var_path }}{{ $.Non_diam_groupNames }}.log"
+            routerId: {{ add 90 $i }}
+            s11_addr: {{ $c.S11Addr }}/{{ $c.S11Subnet }}
+            s11_port: {{ $c.S11Port }}
+            s11_gateway: {{ $c.S11Gateway }}
+            s11_subnet: {{ $c.S11Subnet}}
+
+            s5c_addr: {{ $c.S5cAddr }}/{{ $c.S5cSubnet }}
+            s5c_port: {{ $c.S5cPort }}
+            s5c_gateway: {{ $c.S5cGateway }}
+            s5c_subnet: {{ $c.S5cSubnet }} 
+
+            sxa_addr: {{ $c.SxaAddr }}/{{ $c.SxaSubnet }}
+            sxa_port: {{ $c.SxaPort }}
+            sxa_gateway: {{ $c.SxaGateway }}
+            sxa_subnet: {{ $c.SxaSubnet }}
+
+            components:
+            {{- range $c.Components }}
+              - {{ . }}
+            {{- end }}
+
+        {{- end }}
+
+    # ============================================================
+    # SGWU CLUSTER
+    # ============================================================
+    sgwu:
+      children:
+        {{- range $i, $c := .SGWUsCluster }}
+        sgwu{{ add $i 1 }}_cluster:
+          hosts:
+            sgwu{{ add $i 1 }}:
+              ansible_host: {{ $c.Master.ANSIBLE_HOST }}
+              managementPort: {{ $c.Master.ManagementPort }}
+              ansible_user: {{ $c.Master.User }}
+              ansible_password: q
+              ansible_become_pass: q
+              keepalived_role: MASTER
+              keepalived_priority: 101
+
+            sgwu{{ add $i 1 }}_backup:
+              ansible_host: {{ $c.Backup.ANSIBLE_HOST }}
+              managementPort: 22
+              ansible_user: {{ $c.Backup.User }}
+              ansible_password: q
+              ansible_become_pass: q
+              keepalived_role: BACKUP
+              keepalived_priority: 100
+
+          vars:
+            logger: "{{ $.Var_path }}{{ $.Non_diam_groupNames }}.log"
+            routerId: {{ add 100 $i }}
+            s1u_addr: {{ $c.S1uAddr }}/{{ $c.S1uSubnet }}
+            s1u_port: {{ $c.S1uPort }}
+            s1u_gateway: {{ $c.S1uGateway }}
+            s1u_subnet: {{ $c.S1uSubnet}}
+
+            s5u_addr: {{ $c.S5uAddr }}/{{ $c.S5uSubnet }}
+            s5u_port: {{ $c.S5uPort }}
+            s5u_gateway: {{ $c.S5uGateway }}
+            s5u_subnet: {{ $c.S5uSubnet }} 
+
+            sxa_addr: {{ $c.SxaAddr }}/{{ $c.SxaSubnet }}
+            sxa_port: {{ $c.SxaPort }}
+            sxa_gateway: {{ $c.SxaGateway }}
+            sxa_subnet: {{ $c.SxaSubnet }}
+
+            components:
+            {{- range $c.Components }}
+              - {{ . }}
+            {{- end }}
+
+        {{- end }}
+
+    # ============================================================
+    # UPF CLUSTER
+    # ============================================================
+    upf:
+      children:
+        {{- range $i, $c := .UPFsCluster }}
+            upf{{ add $i 1 }}_cluster:
+              hosts:
+                upf{{ add $i 1 }}:
+                  ansible_host: {{ $c.Master.ANSIBLE_HOST }}
+                  managementPort: {{ $c.Master.ManagementPort }}
+                  ansible_user: {{ $c.Master.User }}
+                  ansible_password: {{ $c.Master.Password }}
+                  ansible_become_pass: {{ $c.Master.BecomePass }}
+                  keepalived_role: {{ $c.Master.KeepalivedRole }}
+                  keepalived_priority: {{ $c.Master.KeepalivedPrio }}
+
+                upf{{ add $i 1 }}_backup:
+                  ansible_host: {{ $c.Backup.ANSIBLE_HOST }}
+                  managementPort: {{ $c.Backup.ManagementPort }}
+                  ansible_user: {{ $c.Backup.User }}
+                  ansible_password: {{ $c.Backup.Password }}
+                  ansible_become_pass: {{ $c.Backup.BecomePass }}
+                  keepalived_role: {{ $c.Backup.KeepalivedRole }}
+                  keepalived_priority: {{ $c.Backup.KeepalivedPrio }}
+
+              vars:
+                logger: "{{ $.Var_path }}{{ $.Diam_groupNames }}.log"
+                freeDiameter: "{{ $.Var_path_diameter }}{{ $.Diam_groupNames }}.conf"
+                routerId: {{ add 120 $i }}
+                sxb_addr: {{ $c.SxbAddr }}/{{ $c.SxbSubnet }}
+                sxb_port: {{ $c.SxbPort }}
+                sxb_gateway: {{ $c.SxbGateway }}
+                sxb_subnet: {{ $c.SxbSubnet }}
+
+                sxu_addr: {{ $c.SxuAddr }}/{{ $c.SxuSubnet}}
+                sxu_port: {{ $c.SxuPort }}
+                sxu_gateway: {{ $c.SxuGateway }}
+                sxu_subnet: {{ $c.SxuSubnet}}
+
+                s5c_addr: {{ $c.S5uAddr }}/{{ $c.S5uSubnet }}
+                s5c_port: {{ $c.S5uPort }}
+                s5c_gateway: {{ $c.S5uGateway }}
+                s5c_subnet: {{ $c.S5uSubnet }} 
+
+                components:
+                {{- range $c.Components }}
+                  - {{ . }}
+                {{- end }}
+
+            {{- end }}
+         
+    # ============================================================
+    # DIAMETER PEERS METAGROUP
+    # ============================================================
     diam_peers:
       children:
+        # --------------------------------------------------------
+        # MME CLUSTER
+        # --------------------------------------------------------
         mme:
-          hosts:
-            mme1:
-              ansible_host: {{ .MME_managementIP }}
-              managementPort: {{ .MME_managementPort }}
-              ansible_user: mos
-              ansible_password: q 
-              ansible_become_pass: q
-              logger: "{{ .Var_path }}{{ .Diam_groupNames }}.log"
-              freeDiameter: "{{ .Diameter_path }}{{ .Diam_groupNames }}.conf"
-              tac: 1 
-              s11_addr: {{ .MME_s11 }}
-              s11_port: {{ .MME_s11Port }}
-              s1ap_addr: {{ .MME_s1ap }}
-              s1ap_port: {{ .MME_s1apPort }}
-              s6a_addr: {{ .MME_s6a }}
-              s6a_port: {{ .MME_s6aPort }}
-              s6a_secport: {{ .S6a_secPort }}
-              components:
-              {{- range .MME1_componentToConnect}}
-                - {{ . }}
-			  {{- end }}
+          children:
+            {{- range $i, $c := .MMEsCluster }}
+            mme{{ add $i 1 }}_cluster:
+              hosts:
+                mme{{ add $i 1 }}:
+                  ansible_host: {{ $c.Master.ANSIBLE_HOST }}
+                  managementPort: {{ $c.Master.ManagementPort }}
+                  ansible_user: {{ $c.Master.User }}
+                  ansible_password: {{ $c.Master.Password }}
+                  ansible_become_pass: {{ $c.Master.BecomePass }}
+                  keepalived_role: {{ $c.Master.KeepalivedRole }}
+                  keepalived_priority: {{ $c.Master.KeepalivedPrio }}
 
-              # freeDiameter variables
-              diam_Id_host: "{{ .Inventory_hostname }}.{{ .Diam_Realm }}"
+                mme{{ add $i 1 }}_backup:
+                  ansible_host: {{ $c.Backup.ANSIBLE_HOST }}
+                  managementPort: {{ $c.Backup.ManagementPort }}
+                  ansible_user: {{ $c.Backup.User }}
+                  ansible_password: {{ $c.Backup.Password }}
+                  ansible_become_pass: {{ $c.Backup.BecomePass }}
+                  keepalived_role: {{ $c.Backup.KeepalivedRole }}
+                  keepalived_priority: {{ $c.Backup.KeepalivedPrio }}
 
+              vars:
+                logger: "{{ $.Var_path }}{{ $.Diam_groupNames }}.log"
+                freeDiameter: "{{ $.Var_path_diameter }}{{ $.Diam_groupNames }}.conf"
+                routerId: {{ add $i 1 }}
+                s1ap_addr: {{ $c.S1apAddr }}/{{ $c.S1apSubnet }}
+                s1ap_port: {{ $c.S1apPort }}
+                s1ap_gateway: {{ $c.S1apGateway }}
+                s1ap_subnet: {{ $c.S1apSubnet }}
+
+                s11_addr: {{ $c.S11Addr }}/{{ $c.S11Subnet}}
+                s11_port: {{ $c.S11Port }}
+                s11_gateway: {{ $c.S11Gateway }}
+                s11_subnet: {{ $c.S11Subnet}}
+
+                s5c_addr: {{ $c.S5cAddr }}/{{ $c.S5cSubnet }}
+                s5c_port: {{ $c.S5cPort }}
+                s5c_gateway: {{ $c.S5cGateway }}
+                s5c_subnet: {{ $c.S5cSubnet }} 
+
+                s6a_addr: {{ $c.S6aAddr }}/{{ $c.S6aSubnet }}
+                s6a_port: {{ $c.S6aPort }}
+                s6a_gateway: {{ $c.S6aGateway }}
+                s6a_subnet: {{ $c.S6aSubnet }}
+
+                components:
+                {{- range $c.Components }}
+                  - {{ . }}
+                {{- end }}
+
+                gummei:
+                  - plmn_id:
+                      mcc: 432
+                      mnc: 80
+                    mme_gid: 1111
+                    mme_code: 111
+                
+                tai:
+                  - plmn_id:
+                      mcc: 432
+                      mnc: 80
+                    tac: [30511, 30512, 30513, 30514, 30516, 30517, 30519, 30581, 30582, 30583, 30585, 30590]
+                  - plmn_id:
+                      mcc: 432
+                      mnc: 11
+                    tac: [30509]
+
+                non_restrict_plmn:
+                  - plmn_id:
+                      mcc: 432
+                      mnc: 11
+                      decision_digits: 29997
+                  - plmn_id:
+                      mcc: 432
+                      mnc: 11
+                      decision_digits: 00000
+
+            {{- end }}
+
+        # --------------------------------------------------------
+        # HSS CLUSTER
+        # --------------------------------------------------------
         hss:
-          hosts:
-            hss1:
-              ansible_host: {{ .HSS_managementIP }}
-              managementPort: {{ .HSS_managementPort }}
-              ansible_user: mos
-              ansible_password: q 
-              ansible_become_pass: q
-              logger: "{{ .Var_path }}{{ .Diam_groupNames }}.log"
-              freeDiameter: "{{ .Diameter_path }}{{ .Diam_groupNames }}.conf"
-              db_uri: mongodb://localhost/{{ .Core_name }}
+          children:
+            {{- range $i, $c := .HSSsCluster }}
+            hss{{ add $i 1 }}_cluster:
+              hosts:
+                hss{{ add $i 1 }}:
+                  ansible_host: {{ $c.Master.ANSIBLE_HOST }}
+                  managementPort: {{ $c.Master.ManagementPort }}
+                  ansible_user: {{ $c.Master.User }}
+                  ansible_password: {{ $c.Master.Password }}
+                  ansible_become_pass: {{ $c.Master.BecomePass }}
+                  keepalived_role: {{ $c.Master.KeepalivedRole }}
+                  keepalived_priority: {{ $c.Master.KeepalivedPrio }}
 
+                hss{{ add $i 1 }}_backup:
+                  ansible_host: {{ $c.Backup.ANSIBLE_HOST }}
+                  managementPort: {{ $c.Backup.ManagementPort }}
+                  ansible_user: {{ $c.Backup.User }}
+                  ansible_password: {{ $c.Backup.Password }}
+                  ansible_become_pass: {{ $c.Backup.BecomePass }}
+                  keepalived_role: {{ $c.Backup.KeepalivedRole }}
+                  keepalived_priority: {{ $c.Backup.KeepalivedPrio }}
 
-              s6a_addr: {{ .HSS_s6a }}
-              s6a_port: {{ .HSS_s6aPort }}
-              s6a_secport: {{ .S6a_secPort }}
-              components:
-              {{- range .HSS_componentToConnect }}
-                - {{ . }}
-              {{- end }}
+              vars:
+                logger: "{{ $.Var_path }}{{ $.Diam_groupNames }}.log"
+                freeDiameter: "{{ $.Var_path_diameter }}{{ $.Diam_groupNames }}.conf"
+                routerId: {{ add 50 $i }}
+                hss_id: {{ add $i 1 }}
+                s6a_addr: {{ $c.S6aAddr }}/{{ $c.S6aSubnet }}
+                s6a_port: {{ $c.S6aPort }}
+                s6a_gateway: {{ $c.S6aGateway }}
+                s6a_subnet: {{ $c.S6aSubnet }}
+                components:
+                {{- range $c.Components }}
+                  - {{ . }}
+                {{- end }}
 
-              # freeDiameter variables
-              diam_Id_host: "{{ .Inventory_hostname }}.{{ .Diam_Realm }}"
+            {{- end }} 
 
+        # --------------------------------------------------------
+        # SMF CLUSTER
+        # --------------------------------------------------------
         smf:
-          hosts:
-            smf1:
-              ansible_host: {{ .SMF_managementIP }}
-              managementPort: {{ .SMF_managementPort }}
-              ansible_user: mos
-              ansible_password: q 
-              ansible_become_pass: q
-              logger: "{{ .Var_path }}{{ .Diam_groupNames }}.log"
-              freeDiameter: "{{ .Diameter_path }}{{ .Diam_groupNames }}.conf"
-              sbi_addr: 9877
-              gx_addr: {{ .SMF_gx }}
-              gx_port: {{ .SMF_gxPort }}
-              gx_secport: {{ .Gx_secPort }}
-              s5c_addr: {{ .SMF_s5c }}
-              s5c_port: {{ .SMF_s5cPort }}
-              sxb_addr: {{ .SMF_sxb }}
-              sxb_port: {{ .SMF_sxbPort }}
-              sxu_addr: {{ .SMF_sxu }}
-              sxu_port: {{ .SMF_sxuPort }}
-              subnet:
-                  addr: 10.45.0.1/16
-                  dev: ogstun
-                  apn: internet
-              dns:
-                  primary: 8.8.8.8
-                  secondary: 8.8.4.4
+          children:
+            {{- range $i, $c := .SMFsCluster }}
+            smf{{ add $i 1 }}_cluster:
+              hosts:
+                smf{{ add $i 1 }}:
+                  ansible_host: {{ $c.Master.ANSIBLE_HOST }}
+                  managementPort: {{ $c.Master.ManagementPort }}
+                  ansible_user: {{ $c.Master.User }}
+                  ansible_password: {{ $c.Master.Password }}
+                  ansible_become_pass: {{ $c.Master.BecomePass }}
+                  keepalived_role: {{ $c.Master.KeepalivedRole }}
+                  keepalived_priority: {{ $c.Master.KeepalivedPrio }}
 
-              # freeDiameter variables
-              diam_Id_host: "{{ .Inventory_hostname }}.{{ .Diam_Realm }}"
-              components:
-              {{- range .SMF_componentToConnect }}
-                - {{ . }}
-              {{- end }}
+                smf{{ add $i 1 }}_backup:
+                  ansible_host: {{ $c.Backup.ANSIBLE_HOST }}
+                  managementPort: {{ $c.Backup.ManagementPort }}
+                  ansible_user: {{ $c.Backup.User }}
+                  ansible_password: {{ $c.Backup.Password }}
+                  ansible_become_pass: {{ $c.Backup.BecomePass }}
+                  keepalived_role: {{ $c.Backup.KeepalivedRole }}
+                  keepalived_priority: {{ $c.Backup.KeepalivedPrio }}
 
+              vars:
+                logger: "{{ $.Var_path }}{{ $.Diam_groupNames }}.log"
+                freeDiameter: "{{ $.Var_path_diameter }}{{ $.Diam_groupNames }}.conf"
+                routerId: {{ add 70 $i }}
+                sxb_addr: {{ $c.SxbAddr }}/{{ $c.SxbSubnet }}
+                sxb_port: {{ $c.SxbPort }}
+                sxb_gateway: {{ $c.SxbGateway }}
+                sxb_subnet: {{ $c.SxbSubnet }}
+
+                sxu_addr: {{ $c.SxuAddr }}/{{ $c.SxuSubnet}}
+                sxu_port: {{ $c.SxuPort }}
+                sxu_gateway: {{ $c.SxuGateway }}
+                sxu_subnet: {{ $c.SxuSubnet}}
+
+                s5c_addr: {{ $c.S5cAddr }}/{{ $c.S5cSubnet }}
+                s5c_port: {{ $c.S5cPort }}
+                s5c_gateway: {{ $c.S5cGateway }}
+                s5c_subnet: {{ $c.S5cSubnet }} 
+
+                gx_addr: {{ $c.GxAddr }}/{{ $c.GxSubnet }}
+                gx_port: {{ $c.GxPort }}
+                gx_gateway: {{ $c.GxGateway }}
+                gx_subnet: {{ $c.GxSubnet }}
+
+                components:
+                {{- range $c.Components }}
+                  - {{ . }}
+                {{- end }}
+
+            {{- end }}
+
+        # --------------------------------------------------------
+        # PCRF CLUSTER
+        # --------------------------------------------------------
         pcrf:
-          hosts:
-            pcrf1:
-              ansible_host: {{ .PCRF_managementIP }}
-              managementPort: {{ .PCRF_managementPort }}
-              ansible_user: mos
-              ansible_password: q 
-              ansible_become_pass: q
-              logger: "{{ .Var_path }}{{ .Diam_groupNames }}.log"
-              freeDiameter: "{{ .Diameter_path }}{{ .Diam_groupNames }}.conf"
-              db_uri: mongodb://localhost/bbdh
+          children:
+            {{- range $i, $c := .PCRFsCluster }}
+            pcrf{{ add $i 1 }}_cluster:
+              hosts:
+                pcrf{{ add $i 1 }}:
+                  ansible_host: {{ $c.Master.ANSIBLE_HOST }}
+                  managementPort: {{ $c.Master.ManagementPort }}
+                  ansible_user: {{ $c.Master.User }}
+                  ansible_password: {{ $c.Master.Password }}
+                  ansible_become_pass: {{ $c.Master.BecomePass }}
+                  keepalived_role: {{ $c.Master.KeepalivedRole }}
+                  keepalived_priority: {{ $c.Master.KeepalivedPrio }}
 
-              gx_addr: {{ .PCRF_gx }}
-              gx_port: {{ .PCRF_gxPort }}
-              gx_secport: {{ .Gx_secPort }}
-              components:
-              {{- range .PCRF_componentToConnect }}
-                - {{ . }}
-              {{- end }}
+                pcrf{{ add $i 1 }}_backup:
+                  ansible_host: {{ $c.Backup.ANSIBLE_HOST }}
+                  managementPort: {{ $c.Backup.ManagementPort }}
+                  ansible_user: {{ $c.Backup.User }}
+                  ansible_password: {{ $c.Backup.Password }}
+                  ansible_become_pass: {{ $c.Backup.BecomePass }}
+                  keepalived_role: {{ $c.Backup.KeepalivedRole }}
+                  keepalived_priority: {{ $c.Backup.KeepalivedPrio }}
 
-              # freeDiameter variables
-              diam_Id_host: "{{ .Inventory_hostname }}.{{ .Diam_Realm }}"
+              vars:
+                logger: "{{ $.Var_path }}{{ $.Diam_groupNames }}.log"
+                freeDiameter: "{{ $.Var_path_diameter }}{{ $.Diam_groupNames }}.conf"
+                routerId: {{ add 80 $i }}
+                gx_addr: {{ $c.GxAddr }}/{{ $c.GxSubnet }}
+                gx_port: {{ $c.GxPort }}
+                gx_gateway: {{ $c.GxGateway }}
+                gx_subnet: {{ $c.GxSubnet }}
+                components:
+                {{- range $c.Components }}
+                  - {{ . }}
+                {{- end }}
+
+            {{- end }}
                `
 
-	templateTest := template.Must(template.New("yaml").Parse(yamlData))
+	funcMap := template.FuncMap{
+		"add": func(a, b int) int {
+			return a + b
+		},
+	}
+	templateTest := template.Must(template.New("yaml").Funcs(funcMap).Parse(yamlData))
 
 	var buf bytes.Buffer
 
-	if err := templateTest.Execute(&buf, data); err != nil {
+	if err := templateTest.Execute(&buf, givenDataTemplate); err != nil {
 		panic(err)
 	}
 
-	// inventoryPath, fileName := "ansible/ansible-core-deploy/inventory/", "main.yml"
-	fileName := "demo.yml"
-	// os.WriteFile(inventoryPath+fileName, buf.Bytes(), 0644)
-	os.WriteFile(fileName, buf.Bytes(), 0644)
+	inventoryPath, fileName := "ansible/ansible-core-deploy/inventory/", "main.yml"
+	// fileName := "demo.yml"
+	os.WriteFile(inventoryPath+fileName, buf.Bytes(), 0644)
+	// os.WriteFile(fileName, buf.Bytes(), 0644)
 	fmt.Printf("\n%sGenerating %s  file ...%s", color.Yellow, fileName, color.Reset)
 	time.Sleep(1 * time.Second)
 	fmt.Printf("\n%s%s generated in the current path%s\n\n", color.Green, fileName, color.Reset)
