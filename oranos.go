@@ -12,7 +12,7 @@ import (
 	"github.com/terraform_runner/helper"
 )
 
-func Oranos_configure(wdir string) {
+func Oranos_configure(wdir , hostname string) {
 	var builder strings.Builder
 
 	currentDir, err := os.Getwd()
@@ -41,7 +41,8 @@ func Oranos_configure(wdir string) {
 
 	time.Sleep(2 * time.Second)
 	fmt.Printf("%s%s Updated Successfully %s\n", color.Green, filename, color.Reset)
-	main()
+	MainStage(wdir , hostname , 1)
+	// main()
 }
 
 func printSortedByID(vlans map[string]string) {

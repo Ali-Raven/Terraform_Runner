@@ -2,13 +2,12 @@ package main
 
 import (
 	"bufio"
-	"context"
 	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
-	"net/url"
 	"os"
+	"slices"
 	"strings"
 	"time"
 
@@ -16,8 +15,6 @@ import (
 	"github.com/TwiN/go-color"
 	"github.com/joho/godotenv"
 	"github.com/terraform_runner/helper"
-	"github.com/vmware/govmomi"
-	"github.com/vmware/govmomi/find"
 )
 
 var (
@@ -49,6 +46,7 @@ var (
 	vCenterURL                string
 	vCenterUserName           string
 	vCenterPass               string
+	ds                        []string
 )
 
 var (
@@ -88,7 +86,7 @@ type TFvars struct {
 	VMs []VM `json:"vms"`
 }
 
-func Nozaros_configure(wdir string) {
+func Nozaros_configure(wdir, hostname string) {
 	reader := bufio.NewReader(os.Stdin)
 
 	// getting vCenter server info
@@ -106,20 +104,18 @@ func Nozaros_configure(wdir string) {
 	var choice []string
 	choice = []string{"create new VMs", "Modify existing VMs", "Delete VMs", "Generating Inventory.yml file", "Test enviroment", "Main menu", "Exit"}
 	optionStr := helper.AskSelect(choice)
-	// fmt.Println("1. create new VMs \n2. Modify existing VMs\n3. Delete VMs\n4. Generating Inventory.yml file\n5. Main menu\n6. Exit")
-	// fmt.Print("\nSelect an option (1-5) : ")
 
 	switch optionStr {
 	case "create new VMs":
-		createNewVMs(reader, wdir)
+		createNewVMs(reader, wdir, hostname)
 	case "Modify existing VMs":
-		ModifyVMs(reader, wdir)
+		ModifyVMs(reader, wdir, hostname)
 	case "Delete VMs":
-		DeleteVMs(reader, wdir)
+		DeleteVMs(reader, wdir, hostname)
 	case "Generating Inventory.yml file":
 		Yml(wdir, vms)
 		time.Sleep(1 * time.Second)
-		Nozaros_configure(wdir)
+		Nozaros_configure(wdir, hostname)
 	case "Test enviroment":
 		err := godotenv.Load()
 		if err != nil {
@@ -134,7 +130,8 @@ func Nozaros_configure(wdir string) {
 	case "Main menu":
 		fmt.Println(color.Yellow + "\nReturning to main menu..." + color.Reset)
 		time.Sleep(1 * time.Second)
-		main()
+		MainStage(wdir, hostname, 2)
+		Nozaros_configure(wdir, hostname)
 	case "Exit":
 		fmt.Println("Exiting...")
 		time.Sleep(1 * time.Second)
@@ -143,15 +140,15 @@ func Nozaros_configure(wdir string) {
 		fmt.Println(color.Yellow + "\nWarning : choose one of the above options ..." + color.Reset)
 		fmt.Println(color.Yellow + "Returning to menu ..." + color.Reset)
 		time.Sleep(1 * time.Second)
-		Nozaros_configure(wdir)
+		Nozaros_configure(wdir, hostname)
 	}
 	time.Sleep(1 * time.Second)
 	fmt.Printf("%s%s Updated Successfully. %s\n", color.Green, "terraform.tfvars.json", color.Reset)
-	Nozaros_configure(wdir)
+	Nozaros_configure(wdir, hostname)
 }
 
 // =========================================================================== Creating New VMs ==========================================================================
-func createNewVMs(reader *bufio.Reader, wdir string) {
+func createNewVMs(reader *bufio.Reader, wdir, hostname string) {
 	for {
 		fmt.Println(color.Yellow + "\nCreating new VMs..." + color.Reset)
 		time.Sleep(1 * time.Second)
@@ -163,7 +160,7 @@ func createNewVMs(reader *bufio.Reader, wdir string) {
 			fmt.Println(color.Red + "Enter Numbers Please." + color.Reset)
 			fmt.Println("\nReturning to menu ....")
 			time.Sleep(1 * time.Second)
-			Nozaros_configure(wdir)
+			Nozaros_configure(wdir, hostname)
 		}
 
 		vms, errVM := loadExistingVMs(wdir)
@@ -171,7 +168,7 @@ func createNewVMs(reader *bufio.Reader, wdir string) {
 			panic(errVM)
 		}
 		for i := 0; i < numVMcount; i++ {
-			fmt.Printf("%s%s Connecting to vCenter server ...%s%s" , color.Bold , color.Yellow , color.Reset , color.Reset)
+			fmt.Printf("%s%s Connecting to vCenter server ...%s%s", color.Bold, color.Yellow, color.Reset, color.Reset)
 
 			ds, dErr := GetAllDatastoreName(vCenterURL, vCenterUserName, vCenterPass)
 			if dErr != nil {
@@ -180,14 +177,14 @@ func createNewVMs(reader *bufio.Reader, wdir string) {
 			}
 			fmt.Printf(color.Yellow+"\n--- VM %d ---\n"+color.Reset, i+1)
 
-			collected := collectVM(reader , ds)
+			collected := collectVM(reader, ds , wdir , hostname)
 
 			for _, vm := range collected {
 				vms = append(vms, vm)
 			}
 		}
 
-		retrunedPreview := preview(vms, reader, wdir)
+		retrunedPreview := preview(vms, reader, wdir , hostname)
 		if retrunedPreview == 0 {
 			return
 		}
@@ -212,7 +209,7 @@ func loadExistingVMs(wdir string) ([]VM, error) {
 	}
 	return tfvars.VMs, nil
 }
-func preview(vms []VM, reader *bufio.Reader, wdir string) int {
+func preview(vms []VM, reader *bufio.Reader, wdir , hostname string) int {
 	data := TFvars{VMs: vms}
 	jsonBytes, _ := json.MarshalIndent(data, "", "  ")
 
@@ -233,14 +230,14 @@ func preview(vms []VM, reader *bufio.Reader, wdir string) int {
 	case "2":
 		fmt.Println(color.Yellow + "\nRe-enter VM data...\n" + color.Reset)
 
-		collected := collectVM(reader , )
+		collected := collectVM(reader, ds , wdir , hostname)
 
 		for _, vm := range collected {
 			vms = append(vms, vm)
 		}
 
 		// fmt.Println(vms)
-		preview(vms, reader, wdir)
+		preview(vms, reader, wdir , hostname)
 	case "3":
 		fmt.Println(color.Red + "Canceled ❌" + color.Reset)
 		fmt.Println("returning to the main menu ...")
@@ -283,50 +280,31 @@ func readRequired(reader *bufio.Reader, label string) string {
 	}
 }
 
-func GetAllDatastoreName(vcURL, username, pass string) ([]string, error) {
-	ctx := context.Background()
+func ComponentsToConnectValidations(componentsToConnect, targets []string) (bool, error) {
+	fmt.Println(color.Yellow + "\nValidating Components to Connect ..." + color.Reset)
+	time.Sleep(1 * time.Second)
 
-	// 1. Format the vCenter URL
-	u, err := url.Parse(fmt.Sprintf("https://%s:%s@%s/sdk", username, pass, vcURL))
+	for _, t := range targets {
+		found := slices.ContainsFunc(componentsToConnect, func(c string) bool {
+			return strings.Contains(c, t)
+		})
 
-	if err != nil {
-		return nil, fmt.Errorf("invalid vCenter URL: %w", err)
+		if !found {
+			return false, fmt.Errorf("validation failed: component '%s' must exists in the compoentns to connect list.", t)
+		}
 	}
-
-	// 2. Connect to vCenter
-	client, err := govmomi.NewClient(ctx, u, true)
-	if err != nil {
-		return nil, fmt.Errorf("failed to connect to vCenter: %w", err)
-	}
-	defer client.Logout(ctx)
-
-	// 3. Initialize the Finder
-	finder := find.NewFinder(client.Client, true)
-
-	// 4. Find the default datacenter to scope our search
-	dc, err := finder.DefaultDatacenter(ctx)
-	if err != nil {
-		return nil, fmt.Errorf("failed to find default datacenter: %w", err)
-	}
-	finder.SetDatacenter(dc)
-
-	// 5. Find ALL datastores using the "*" wildcard
-	datastores, err := finder.DatastoreList(ctx, "*")
-	if err != nil {
-		return nil, fmt.Errorf("failed to list datastores: %w", err)
-	}
-
-	// 6. Extract the names into a simple string slice
-	var dsNames []string
-	for _, ds := range datastores {
-		dsNames = append(dsNames, ds.Name())
-	}
-
-	return dsNames, nil
+	return true, nil
 }
-
-func isVMNameIsCoreComponent(CompsConnectedItems []string) {
+func isVMNameIsCoreComponent(CompsConnectedItems, targets []string, wdir, hostname string) {
 	componentsToConnect = helper.MultiSelect("which Components you want to Connect ?", CompsConnectedItems)
+
+	_, err := ComponentsToConnectValidations(componentsToConnect, targets)
+	if err != nil {
+		fmt.Printf("%sError: %v%s\n", color.Red, err, color.Reset)
+		isVMNameIsCoreComponent(CompsConnectedItems , targets , wdir , hostname)
+	} else {
+		fmt.Println(color.Green+"Validation passed !\n"+color.Reset)
+	}
 	backupComps = helper.Ask("Do you Want Backup Option for this Component ?", backupComps)
 	if backupComps == "y" {
 		vipForBackupComps = helper.Ask("Enter Your Management IP address for Backup Components :", vipForBackupComps)
@@ -339,7 +317,7 @@ func isVMNameIsCoreComponent(CompsConnectedItems []string) {
 			fmt.Println(color.Yellow+"try this section again with True value ", color.Reset)
 			fmt.Println(color.Yellow+"Returning ...", color.Reset)
 			time.Sleep(1 * time.Second)
-			isVMNameIsCoreComponent(CompsConnectedItems)
+			isVMNameIsCoreComponent(CompsConnectedItems, targets , wdir , hostname)
 		}
 	} else {
 		fmt.Println(color.Yellow + "Skipping ..." + color.Reset)
@@ -347,7 +325,7 @@ func isVMNameIsCoreComponent(CompsConnectedItems []string) {
 	}
 }
 
-func collectVM(reader *bufio.Reader , ds []string) []VM {
+func collectVM(reader *bufio.Reader, ds []string, wdir , hostname string) []VM {
 
 	VmName = helper.Ask("Enter VM Name:", VmName)
 	VmTargetHost = helper.Ask("Enter Target Host of VM :", VmTargetHost)
@@ -360,19 +338,19 @@ func collectVM(reader *bufio.Reader , ds []string) []VM {
 
 	switch {
 	case strings.Contains(strings.ToUpper(componentName), "MME"):
-		isVMNameIsCoreComponent(MMEConnectedComps)
+		isVMNameIsCoreComponent(MMEConnectedComps, []string{"HSS", "SMF", "SGWC"} , wdir , hostname)
 	case strings.Contains(strings.ToUpper(componentName), "HSS"):
-		isVMNameIsCoreComponent(HSSConnectedComps)
+		isVMNameIsCoreComponent(HSSConnectedComps, []string{"MME"}, wdir , hostname)
 	case strings.Contains(strings.ToUpper(componentName), "SGWC"):
-		isVMNameIsCoreComponent(SGWCConnectedComps)
+		isVMNameIsCoreComponent(SGWCConnectedComps, []string{"MME", "SMF", "SGWU"}, wdir , hostname)
 	case strings.Contains(strings.ToUpper(componentName), "SGWU"):
-		isVMNameIsCoreComponent(SGWUConnectedComps)
+		isVMNameIsCoreComponent(SGWUConnectedComps, []string{"SGWC", "UPF"}, wdir , hostname)
 	case strings.Contains(strings.ToUpper(componentName), "SMF"):
-		isVMNameIsCoreComponent(SMFConnectedComps)
+		isVMNameIsCoreComponent(SMFConnectedComps, []string{"SGWC", "PCRF", "UPF"}, wdir , hostname)
 	case strings.Contains(strings.ToUpper(componentName), "UPF"):
-		isVMNameIsCoreComponent(UPFConnectedComps)
+		isVMNameIsCoreComponent(UPFConnectedComps, []string{"SMF", "SGWU"}, wdir , hostname)
 	case strings.Contains(strings.ToUpper(componentName), "PCRF"):
-		isVMNameIsCoreComponent(PCRFConnectedComps)
+		isVMNameIsCoreComponent(PCRFConnectedComps, []string{"SMF"}, wdir , hostname)
 	default:
 
 	}
@@ -532,7 +510,7 @@ func readAdditionalNetworks() []Network {
 // =========================================================================== Creating New VMs (END) ==========================================================================
 
 // =========================================================================== Modify VMs ==========================================================================
-func ModifyVMs(reader *bufio.Reader, wdir string) {
+func ModifyVMs(reader *bufio.Reader, wdir, hostname string) {
 	fmt.Println(color.Bold + color.Yellow + "\nfetching list of existings vms ..." + color.Reset + color.Reset)
 	time.Sleep(1 * time.Second)
 	// loadExistingVMs(wdir)
@@ -565,7 +543,7 @@ func ModifyVMs(reader *bufio.Reader, wdir string) {
 	} else if vmID == "0" {
 		fmt.Println(color.Yellow + "\nReturning to menu ..." + color.Reset)
 		time.Sleep(1 * time.Second)
-		Nozaros_configure(wdir)
+		Nozaros_configure(wdir, hostname)
 	}
 	// Further implementation to modify the VM with the given name
 	fmt.Printf("Modifying VM:%s%s %s %s%s\n", color.Bold, color.Yellow, vmID, color.Reset, color.Reset)
@@ -576,7 +554,7 @@ func ModifyVMs(reader *bufio.Reader, wdir string) {
 	saveNewTFvars(tfvars, wdir)
 	fmt.Printf("\n%s%sUpdating VMs list ...%s%s\n", color.Bold, color.Yellow, color.Reset, color.Reset)
 	time.Sleep(1 * time.Second)
-	ModifyVMs(reader, wdir)
+	ModifyVMs(reader, wdir, hostname)
 }
 
 func editVMs(reader *bufio.Reader, vm VM, wdir string) VM {
@@ -774,7 +752,7 @@ func printVMBox(vm VM, index int) {
 // =========================================================================== Modify VMs (END) ==========================================================================
 
 // =========================================================================== Delete VMs ==========================================================================
-func DeleteVMs(reader *bufio.Reader, wdir string) {
+func DeleteVMs(reader *bufio.Reader, wdir, hostname string) {
 	fmt.Println(color.Yellow + "\nDelete VMs" + color.Reset)
 	time.Sleep(2 * time.Second)
 	tfvars, err := loadTFvars(wdir)
@@ -805,7 +783,7 @@ func DeleteVMs(reader *bufio.Reader, wdir string) {
 	} else if vmID == "0" {
 		fmt.Println(color.Yellow + "\nReturning to menu ..." + color.Reset)
 		time.Sleep(1 * time.Second)
-		Nozaros_configure(wdir)
+		Nozaros_configure(wdir, hostname)
 	}
 
 	fmt.Printf("Deleting VM ==> %s%s%s\n", color.Cyan, vmID, color.Reset)

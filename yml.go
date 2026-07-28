@@ -106,7 +106,8 @@ func Yml(wdir string, vms []VM) {
 	Var_path_diameter = "/etc/" + Core_Name + "/freeDiameter/"
 	Diam_Realm = "epc.mnc{{ plmn.mnc }}.mcc{{ plmn.mcc }}.3gppnetwork.org"
 	Var_path_Comps = "/var/log/{{ core_name }}/{{ group_names[0] }}.log"
-
+  // USER = "{{ USER }}"
+	// PASSWORD = "{{ PASSWORD }}"
 	// calling Data function
 
 	givenDataTemplate := Data(mmesByName, hsssByName, sgwcsByName, sgwusByName, smfsByName, upfsByName, pcrfsByName)
@@ -120,8 +121,8 @@ func Yml(wdir string, vms []VM) {
     var_path_diameter: {{ .Var_path_diameter }}
     tls_path: {{ .Tls_path }}
     diam_lib_dir: /usr/lib
-    user: {{ .User }}
-    max_ue: 1024
+    # user: "{{ .User }}"
+
     # PLMN that use for most of the components
     plmn:
       mcc: 432
@@ -139,25 +140,28 @@ func Yml(wdir string, vms []VM) {
           hosts:
             sgwc{{ add $i 1 }}:
               ansible_host: {{ $c.Master.ANSIBLE_HOST }}
-              managementPort: {{ $c.Master.ManagementPort }}
-              ansible_user: {{ $c.Master.User }}
-              ansible_password: q
-              ansible_become_pass: q
+              ansible_port: {{ $c.Master.ManagementPort }}
+              ansible_user: "{{ $c.Master.User }}"
+              ansible_password: "{{ $c.Master.Password }}"
+              ansible_become_pass: "{{ $c.Master.BecomePass }}"
               keepalived_role: MASTER
               keepalived_priority: 101
 
             sgwc{{ add $i 1 }}_backup:
               ansible_host: {{ $c.Backup.ANSIBLE_HOST }}
-              managementPort: 22
-              ansible_user: {{ $c.Backup.User }}
-              ansible_password: q
-              ansible_become_pass: q
+              ansible_port: {{ $c.Backup.ManagementPort }}
+              ansible_user: "{{ $c.Backup.User }}"
+              ansible_password: "{{ $c.Backup.Password }}"
+              ansible_become_pass: "{{ $c.Backup.BecomePass }}"
               keepalived_role: BACKUP
               keepalived_priority: 100
 
           vars:
             logger: "{{ $.Var_path }}{{ $.Non_diam_groupNames }}.log"
-            routerId: {{ add 90 $i }}
+            sgwc_id: {{ add $i 1 }}
+            router_id: {{ add 90 $i }}
+            max_ue: 30000
+            max_peer: 30000
             s11_addr: {{ $c.S11Addr }}/{{ $c.S11Subnet }}
             s11_port: {{ $c.S11Port }}
             s11_gateway: {{ $c.S11Gateway }}
@@ -190,25 +194,27 @@ func Yml(wdir string, vms []VM) {
           hosts:
             sgwu{{ add $i 1 }}:
               ansible_host: {{ $c.Master.ANSIBLE_HOST }}
-              managementPort: {{ $c.Master.ManagementPort }}
-              ansible_user: {{ $c.Master.User }}
-              ansible_password: q
-              ansible_become_pass: q
+              ansible_port: {{ $c.Master.ManagementPort }}
+              ansible_user: "{{ $c.Master.User }}"
+              ansible_password: "{{ $c.Master.Password }}"
+              ansible_become_pass: "{{ $c.Master.BecomePass }}"
               keepalived_role: MASTER
               keepalived_priority: 101
 
             sgwu{{ add $i 1 }}_backup:
               ansible_host: {{ $c.Backup.ANSIBLE_HOST }}
-              managementPort: 22
-              ansible_user: {{ $c.Backup.User }}
-              ansible_password: q
-              ansible_become_pass: q
+              ansible_port: {{ $c.Backup.ManagementPort }}
+              ansible_user: "{{ $c.Backup.User }}"
+              ansible_password: "{{ $c.Backup.Password }}"
+              ansible_become_pass: "{{ $c.Backup.BecomePass }}"
               keepalived_role: BACKUP
               keepalived_priority: 100
 
           vars:
             logger: "{{ $.Var_path }}{{ $.Non_diam_groupNames }}.log"
-            routerId: {{ add 100 $i }}
+            router_id: {{ add 100 $i }}
+            max_ue: 30000
+            max_peer: 30000
             s1u_addr: {{ $c.S1uAddr }}/{{ $c.S1uSubnet }}
             s1u_port: {{ $c.S1uPort }}
             s1u_gateway: {{ $c.S1uGateway }}
@@ -241,26 +247,28 @@ func Yml(wdir string, vms []VM) {
               hosts:
                 upf{{ add $i 1 }}:
                   ansible_host: {{ $c.Master.ANSIBLE_HOST }}
-                  managementPort: {{ $c.Master.ManagementPort }}
-                  ansible_user: {{ $c.Master.User }}
-                  ansible_password: {{ $c.Master.Password }}
-                  ansible_become_pass: {{ $c.Master.BecomePass }}
+                  ansible_port: {{ $c.Master.ManagementPort }}
+                  ansible_user: "{{ $c.Master.User }}"
+                  ansible_password: "{{ $c.Master.Password }}"
+                  ansible_become_pass: "{{ $c.Master.BecomePass }}"
                   keepalived_role: {{ $c.Master.KeepalivedRole }}
                   keepalived_priority: {{ $c.Master.KeepalivedPrio }}
 
                 upf{{ add $i 1 }}_backup:
                   ansible_host: {{ $c.Backup.ANSIBLE_HOST }}
-                  managementPort: {{ $c.Backup.ManagementPort }}
-                  ansible_user: {{ $c.Backup.User }}
-                  ansible_password: {{ $c.Backup.Password }}
-                  ansible_become_pass: {{ $c.Backup.BecomePass }}
+                  ansible_port: {{ $c.Backup.ManagementPort }}
+                  ansible_user: "{{ $c.Backup.User }}"
+                  ansible_password: "{{ $c.Backup.Password }}"
+                  ansible_become_pass: "{{ $c.Backup.BecomePass }}"
                   keepalived_role: {{ $c.Backup.KeepalivedRole }}
                   keepalived_priority: {{ $c.Backup.KeepalivedPrio }}
 
               vars:
                 logger: "{{ $.Var_path }}{{ $.Diam_groupNames }}.log"
                 freeDiameter: "{{ $.Var_path_diameter }}{{ $.Diam_groupNames }}.conf"
-                routerId: {{ add 120 $i }}
+                router_id: {{ add 120 $i }}
+                max_ue: 30000
+                max_peer: 30000
                 sxb_addr: {{ $c.SxbAddr }}/{{ $c.SxbSubnet }}
                 sxb_port: {{ $c.SxbPort }}
                 sxb_gateway: {{ $c.SxbGateway }}
@@ -298,26 +306,28 @@ func Yml(wdir string, vms []VM) {
               hosts:
                 mme{{ add $i 1 }}:
                   ansible_host: {{ $c.Master.ANSIBLE_HOST }}
-                  managementPort: {{ $c.Master.ManagementPort }}
-                  ansible_user: {{ $c.Master.User }}
-                  ansible_password: {{ $c.Master.Password }}
-                  ansible_become_pass: {{ $c.Master.BecomePass }}
+                  ansible_port: {{ $c.Master.ManagementPort }}
+                  ansible_user: "{{ $c.Master.User }}"
+                  ansible_password: "{{ $c.Master.Password }}"
+                  ansible_become_pass: "{{ $c.Master.BecomePass }}"
                   keepalived_role: {{ $c.Master.KeepalivedRole }}
                   keepalived_priority: {{ $c.Master.KeepalivedPrio }}
 
                 mme{{ add $i 1 }}_backup:
                   ansible_host: {{ $c.Backup.ANSIBLE_HOST }}
-                  managementPort: {{ $c.Backup.ManagementPort }}
-                  ansible_user: {{ $c.Backup.User }}
-                  ansible_password: {{ $c.Backup.Password }}
-                  ansible_become_pass: {{ $c.Backup.BecomePass }}
+                  ansible_port: {{ $c.Backup.ManagementPort }}
+                  ansible_user: "{{ $c.Backup.User }}"
+                  ansible_password: "{{ $c.Backup.Password }}"
+                  ansible_become_pass: "{{ $c.Backup.BecomePass }}"
                   keepalived_role: {{ $c.Backup.KeepalivedRole }}
                   keepalived_priority: {{ $c.Backup.KeepalivedPrio }}
 
               vars:
                 logger: "{{ $.Var_path }}{{ $.Diam_groupNames }}.log"
                 freeDiameter: "{{ $.Var_path_diameter }}{{ $.Diam_groupNames }}.conf"
-                routerId: {{ add $i 1 }}
+                router_id: {{ add $i 1 }}
+                max_ue: 30000
+                max_peer: 30000
                 s1ap_addr: {{ $c.S1apAddr }}/{{ $c.S1apSubnet }}
                 s1ap_port: {{ $c.S1apPort }}
                 s1ap_gateway: {{ $c.S1apGateway }}
@@ -334,14 +344,9 @@ func Yml(wdir string, vms []VM) {
                 s5c_subnet: {{ $c.S5cSubnet }} 
 
                 s6a_addr: {{ $c.S6aAddr }}/{{ $c.S6aSubnet }}
-                s6a_port: {{ $c.S6aPort }}
+                s6a_port: {{ $c.S6aPort }} 
                 s6a_gateway: {{ $c.S6aGateway }}
                 s6a_subnet: {{ $c.S6aSubnet }}
-
-                components:
-                {{- range $c.Components }}
-                  - {{ . }}
-                {{- end }}
 
                 gummei:
                   - plmn_id:
@@ -369,6 +374,15 @@ func Yml(wdir string, vms []VM) {
                       mcc: 432
                       mnc: 11
                       decision_digits: 00000
+                teid_range:
+                  status: true
+                  min: {{ sub_teid $i }}
+                  max: {{ add_teid $i }}
+             
+                components:
+                {{- range $c.Components }}
+                  - {{ . }}
+                {{- end }}
 
             {{- end }}
 
@@ -382,27 +396,29 @@ func Yml(wdir string, vms []VM) {
               hosts:
                 hss{{ add $i 1 }}:
                   ansible_host: {{ $c.Master.ANSIBLE_HOST }}
-                  managementPort: {{ $c.Master.ManagementPort }}
-                  ansible_user: {{ $c.Master.User }}
-                  ansible_password: {{ $c.Master.Password }}
-                  ansible_become_pass: {{ $c.Master.BecomePass }}
+                  ansible_port: {{ $c.Master.ManagementPort }}
+                  ansible_user: "{{ $c.Master.User }}"
+                  ansible_password: "{{ $c.Master.Password }}"
+                  ansible_become_pass: "{{ $c.Master.BecomePass }}"
                   keepalived_role: {{ $c.Master.KeepalivedRole }}
                   keepalived_priority: {{ $c.Master.KeepalivedPrio }}
 
                 hss{{ add $i 1 }}_backup:
                   ansible_host: {{ $c.Backup.ANSIBLE_HOST }}
-                  managementPort: {{ $c.Backup.ManagementPort }}
-                  ansible_user: {{ $c.Backup.User }}
-                  ansible_password: {{ $c.Backup.Password }}
-                  ansible_become_pass: {{ $c.Backup.BecomePass }}
+                  ansible_port: {{ $c.Backup.ManagementPort }}
+                  ansible_user: "{{ $c.Backup.User }}"
+                  ansible_password: "{{ $c.Backup.Password }}"
+                  ansible_become_pass: "{{ $c.Backup.BecomePass }}"
                   keepalived_role: {{ $c.Backup.KeepalivedRole }}
                   keepalived_priority: {{ $c.Backup.KeepalivedPrio }}
 
               vars:
                 logger: "{{ $.Var_path }}{{ $.Diam_groupNames }}.log"
                 freeDiameter: "{{ $.Var_path_diameter }}{{ $.Diam_groupNames }}.conf"
-                routerId: {{ add 50 $i }}
+                router_id: {{ add 50 $i }}
                 hss_id: {{ add $i 1 }}
+                max_ue: 30000
+                max_peer: 30000
                 s6a_addr: {{ $c.S6aAddr }}/{{ $c.S6aSubnet }}
                 s6a_port: {{ $c.S6aPort }}
                 s6a_gateway: {{ $c.S6aGateway }}
@@ -424,26 +440,29 @@ func Yml(wdir string, vms []VM) {
               hosts:
                 smf{{ add $i 1 }}:
                   ansible_host: {{ $c.Master.ANSIBLE_HOST }}
-                  managementPort: {{ $c.Master.ManagementPort }}
-                  ansible_user: {{ $c.Master.User }}
-                  ansible_password: {{ $c.Master.Password }}
-                  ansible_become_pass: {{ $c.Master.BecomePass }}
+                  ansible_port: {{ $c.Master.ManagementPort }}
+                  ansible_user: "{{ $c.Master.User }}"
+                  ansible_password: "{{ $c.Master.Password }}"
+                  ansible_become_pass: "{{ $c.Master.BecomePass }}"
                   keepalived_role: {{ $c.Master.KeepalivedRole }}
                   keepalived_priority: {{ $c.Master.KeepalivedPrio }}
 
                 smf{{ add $i 1 }}_backup:
                   ansible_host: {{ $c.Backup.ANSIBLE_HOST }}
-                  managementPort: {{ $c.Backup.ManagementPort }}
-                  ansible_user: {{ $c.Backup.User }}
-                  ansible_password: {{ $c.Backup.Password }}
-                  ansible_become_pass: {{ $c.Backup.BecomePass }}
+                  ansible_port: {{ $c.Backup.ManagementPort }}
+                  ansible_user: "{{ $c.Backup.User }}"
+                  ansible_password: "{{ $c.Backup.Password }}"
+                  ansible_become_pass: "{{ $c.Backup.BecomePass }}"
                   keepalived_role: {{ $c.Backup.KeepalivedRole }}
                   keepalived_priority: {{ $c.Backup.KeepalivedPrio }}
 
               vars:
                 logger: "{{ $.Var_path }}{{ $.Diam_groupNames }}.log"
                 freeDiameter: "{{ $.Var_path_diameter }}{{ $.Diam_groupNames }}.conf"
-                routerId: {{ add 70 $i }}
+                smf_id: {{ add $i 1 }}
+                router_id: {{ add 70 $i }}
+                max_ue: 30000
+                max_peer: 30000
                 sxb_addr: {{ $c.SxbAddr }}/{{ $c.SxbSubnet }}
                 sxb_port: {{ $c.SxbPort }}
                 sxb_gateway: {{ $c.SxbGateway }}
@@ -464,6 +483,26 @@ func Yml(wdir string, vms []VM) {
                 gx_gateway: {{ $c.GxGateway }}
                 gx_subnet: {{ $c.GxSubnet }}
 
+                subnets:
+                  - subnet: 10.45.0.0/16
+                    gateway: 10.45.0.1
+                    apn: internet
+                  - subnet: 2001:db8:cafe::/48
+                    gateway: 2001:db8:cafe::1
+                    apn: internetv6
+
+                dnss:
+                  - 8.8.8.8
+                  - 8.8.4.4
+                  - 2001:4860:4860::8888
+                  - 2001:4860:4860::8844
+                
+                p_cscf:
+                  - 10.60.0.20
+
+                ctf:
+                  enabled: no
+
                 components:
                 {{- range $c.Components }}
                   - {{ . }}
@@ -481,26 +520,29 @@ func Yml(wdir string, vms []VM) {
               hosts:
                 pcrf{{ add $i 1 }}:
                   ansible_host: {{ $c.Master.ANSIBLE_HOST }}
-                  managementPort: {{ $c.Master.ManagementPort }}
-                  ansible_user: {{ $c.Master.User }}
-                  ansible_password: {{ $c.Master.Password }}
-                  ansible_become_pass: {{ $c.Master.BecomePass }}
+                  ansible_port: {{ $c.Master.ManagementPort }}
+                  ansible_user: "{{ $c.Master.User }}"
+                  ansible_password: "{{ $c.Master.Password }}"
+                  ansible_become_pass: "{{ $c.Master.BecomePass }}"
                   keepalived_role: {{ $c.Master.KeepalivedRole }}
                   keepalived_priority: {{ $c.Master.KeepalivedPrio }}
 
                 pcrf{{ add $i 1 }}_backup:
                   ansible_host: {{ $c.Backup.ANSIBLE_HOST }}
-                  managementPort: {{ $c.Backup.ManagementPort }}
-                  ansible_user: {{ $c.Backup.User }}
-                  ansible_password: {{ $c.Backup.Password }}
-                  ansible_become_pass: {{ $c.Backup.BecomePass }}
+                  ansible_port: {{ $c.Backup.ManagementPort }}
+                  ansible_user: "{{ $c.Backup.User }}"
+                  ansible_password: "{{ $c.Backup.Password }}"
+                  ansible_become_pass: "{{ $c.Backup.BecomePass }}"
                   keepalived_role: {{ $c.Backup.KeepalivedRole }}
                   keepalived_priority: {{ $c.Backup.KeepalivedPrio }}
 
               vars:
                 logger: "{{ $.Var_path }}{{ $.Diam_groupNames }}.log"
                 freeDiameter: "{{ $.Var_path_diameter }}{{ $.Diam_groupNames }}.conf"
-                routerId: {{ add 80 $i }}
+                router_id: {{ add 80 $i }}
+                pcrf_id: {{ add $i 1 }}
+                max_ue: 30000
+                max_peer: 30000
                 gx_addr: {{ $c.GxAddr }}/{{ $c.GxSubnet }}
                 gx_port: {{ $c.GxPort }}
                 gx_gateway: {{ $c.GxGateway }}
@@ -516,6 +558,12 @@ func Yml(wdir string, vms []VM) {
 	funcMap := template.FuncMap{
 		"add": func(a, b int) int {
 			return a + b
+		},
+		"sub_teid": func(a int) int {
+			return (((a+1)-1)*30000 + 1)
+		},
+		"add_teid": func(a int) int {
+			return ((a + 1) * 30000)
 		},
 	}
 	templateTest := template.Must(template.New("yaml").Funcs(funcMap).Parse(yamlData))

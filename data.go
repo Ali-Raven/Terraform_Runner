@@ -40,6 +40,8 @@ var (
 	hss_s6aPort         int = 2223
 	pcrf_managementPort int = ssh_defaultPort
 	pcrf_gxPort         int = 4434
+	USER                string = "{{ USER }}"
+	PASSWORD            string = "{{ PASSWORD }}"
 	Core_Name           string
 	Var_path            string
 	Var_path_Comps      string
@@ -49,7 +51,6 @@ var (
 	FlagErr             bool
 	Diam_groupNames     string
 	Non_diam_groupNames string
-	UserHost            string = "mos"
 	Var_path_diameter   string
 )
 
@@ -245,6 +246,7 @@ type TemplateData struct {
 // 	}
 // }
 
+
 func extractNumber(name string) int {
 	re := regexp.MustCompile(`\d+`)
 	numStr := re.FindString(name)
@@ -292,21 +294,21 @@ func UpfCluster(upfsByName map[string]generators.ComponentData) []UPFCluster {
 
 			cluster := UPFCluster{
 				Master: HOST{
-					ANSIBLE_HOST:   master.Networks["Core-DevOps-3"].IP,
+					ANSIBLE_HOST:   master.Networks["OAM"].IP,
 					ManagementPort: mme_managementPort,
-					User:           UserHost,
-					Password:       "q",
-					BecomePass:     "q",
+					User:           USER,
+					Password:       PASSWORD,
+					BecomePass:     PASSWORD,
 					KeepalivedRole: "BACKUP",
 					KeepalivedPrio: 101,
 				},
 
 				Backup: HOST{
-					ANSIBLE_HOST:   backup.Networks["Core-DevOps-3"].IP,
+					ANSIBLE_HOST:   backup.Networks["OAM"].IP,
 					ManagementPort: mme_managementPort,
-					User:           UserHost,
-					Password:       "q",
-					BecomePass:     "q",
+					User:           USER,
+					Password:       PASSWORD,
+					BecomePass:     PASSWORD,
 					KeepalivedRole: "BACKUP",
 					KeepalivedPrio: 100,
 				},
@@ -373,21 +375,21 @@ func SgwcCluster(sgwcsByName map[string]generators.ComponentData) []SGWCCluster 
 
 			cluster := SGWCCluster{
 				Master: HOST{
-					ANSIBLE_HOST:   master.Networks["Core-DevOps-3"].IP,
+					ANSIBLE_HOST:   master.Networks["OAM"].IP,
 					ManagementPort: sgwc_managementPort,
-					User:           UserHost,
-					Password:       "q",
-					BecomePass:     "q",
+					User:           USER,
+					Password:       PASSWORD,
+					BecomePass:     PASSWORD,
 					KeepalivedRole: "MASTER",
 					KeepalivedPrio: 101,
 				},
 
 				Backup: HOST{
-					ANSIBLE_HOST:   backup.Networks["Core-DevOps-3"].IP,
+					ANSIBLE_HOST:   backup.Networks["OAM"].IP,
 					ManagementPort: sgwc_managementPort,
-					User:           UserHost,
-					Password:       "q",
-					BecomePass:     "q",
+					User:           USER,
+					Password:       PASSWORD,
+					BecomePass:     PASSWORD,
 					KeepalivedRole: "BACKUP",
 					KeepalivedPrio: 100,
 				},
@@ -410,8 +412,6 @@ func SgwcCluster(sgwcsByName map[string]generators.ComponentData) []SGWCCluster 
 			}
 
 			sgwcClusters = append(sgwcClusters, cluster)
-			// fmt.Println(sgwcClusters)
-			// time.Sleep(100000 * time.Second)
 		}
 	}
 
@@ -453,21 +453,21 @@ func SgwuCluster(sgwusByName map[string]generators.ComponentData) []SGWUCluster 
 
 			cluster := SGWUCluster{
 				Master: HOST{
-					ANSIBLE_HOST:   master.Networks["Core-DevOps-3"].IP,
+					ANSIBLE_HOST:   master.Networks["OAM"].IP,
 					ManagementPort: sgwc_managementPort,
-					User:           UserHost,
-					Password:       "q",
-					BecomePass:     "q",
+					User:           USER,
+					Password:       PASSWORD,
+					BecomePass:     PASSWORD,
 					KeepalivedRole: "MASTER",
 					KeepalivedPrio: 101,
 				},
 
 				Backup: HOST{
-					ANSIBLE_HOST:   backup.Networks["Core-DevOps-3"].IP,
+					ANSIBLE_HOST:   backup.Networks["OAM"].IP,
 					ManagementPort: sgwc_managementPort,
-					User:           UserHost,
-					Password:       "q",
-					BecomePass:     "q",
+					User:           USER,
+					Password:       PASSWORD,
+					BecomePass:     PASSWORD,
 					KeepalivedRole: "BACKUP",
 					KeepalivedPrio: 100,
 				},
@@ -490,8 +490,6 @@ func SgwuCluster(sgwusByName map[string]generators.ComponentData) []SGWUCluster 
 			}
 
 			sgwuClusters = append(sgwuClusters, cluster)
-			// fmt.Println(sgwuClusters)
-			// time.Sleep(100000 * time.Second)
 		}
 	}
 
@@ -533,21 +531,21 @@ func MMeCluster(mmesByName, smfsByName map[string]generators.ComponentData) []MM
 			}
 			cluster := MMECluster{
 				Master: HOST{
-					ANSIBLE_HOST:   master.Networks["Core-DevOps-3"].IP,
+					ANSIBLE_HOST:   master.Networks["OAM"].IP,
 					ManagementPort: mme_managementPort,
-					User:           UserHost,
-					Password:       "q",
-					BecomePass:     "q",
+					User:           USER,
+					Password:       PASSWORD,
+					BecomePass:     PASSWORD,
 					KeepalivedRole: "BACKUP",
 					KeepalivedPrio: 101,
 				},
 
 				Backup: HOST{
-					ANSIBLE_HOST:   backup.Networks["Core-DevOps-3"].IP,
+					ANSIBLE_HOST:   backup.Networks["OAM"].IP,
 					ManagementPort: mme_managementPort,
-					User:           UserHost,
-					Password:       "q",
-					BecomePass:     "q",
+					User:           USER,
+					Password:       PASSWORD,
+					BecomePass:     PASSWORD,
 					KeepalivedRole: "BACKUP",
 					KeepalivedPrio: 100,
 				},
@@ -613,21 +611,21 @@ func SMfCluster(smfsByName map[string]generators.ComponentData) []SMFCluster {
 			}
 			cluster := SMFCluster{
 				Master: HOST{
-					ANSIBLE_HOST:   master.Networks["Core-DevOps-3"].IP,
+					ANSIBLE_HOST:   master.Networks["OAM"].IP,
 					ManagementPort: mme_managementPort,
-					User:           UserHost,
-					Password:       "q",
-					BecomePass:     "q",
+					User:           USER,
+					Password:       PASSWORD,
+					BecomePass:     PASSWORD,
 					KeepalivedRole: "BACKUP",
 					KeepalivedPrio: 101,
 				},
 
 				Backup: HOST{
-					ANSIBLE_HOST:   backup.Networks["Core-DevOps-3"].IP,
+					ANSIBLE_HOST:   backup.Networks["OAM"].IP,
 					ManagementPort: mme_managementPort,
-					User:           UserHost,
-					Password:       "q",
-					BecomePass:     "q",
+					User:           USER,
+					Password:       PASSWORD,
+					BecomePass:     PASSWORD,
 					KeepalivedRole: "BACKUP",
 					KeepalivedPrio: 100,
 				},
@@ -655,12 +653,8 @@ func SMfCluster(smfsByName map[string]generators.ComponentData) []SMFCluster {
 			}
 
 			smfClusters = append(smfClusters, cluster)
-			// fmt.Println(sgwcClusters)
-			// time.Sleep(100000 * time.Second)
 		}
 	}
-	// fmt.Println(smfClusters)
-	// time.Sleep(10000 * time.Second)
 	return smfClusters
 }
 func HSsCluster(hsssByName map[string]generators.ComponentData) []HSSCluster {
@@ -696,21 +690,21 @@ func HSsCluster(hsssByName map[string]generators.ComponentData) []HSSCluster {
 			}
 			cluster := HSSCluster{
 				Master: HOST{
-					ANSIBLE_HOST:   master.Networks["Core-DevOps-3"].IP,
+					ANSIBLE_HOST:   master.Networks["OAM"].IP,
 					ManagementPort: mme_managementPort,
-					User:           UserHost,
-					Password:       "q",
-					BecomePass:     "q",
+					User:           USER,
+					Password:       PASSWORD,
+					BecomePass:     PASSWORD,
 					KeepalivedRole: "BACKUP",
 					KeepalivedPrio: 101,
 				},
 
 				Backup: HOST{
-					ANSIBLE_HOST:   backup.Networks["Core-DevOps-3"].IP,
+					ANSIBLE_HOST:   backup.Networks["OAM"].IP,
 					ManagementPort: mme_managementPort,
-					User:           UserHost,
-					Password:       "q",
-					BecomePass:     "q",
+					User:           USER,
+					Password:       PASSWORD,
+					BecomePass:     PASSWORD,
 					KeepalivedRole: "BACKUP",
 					KeepalivedPrio: 100,
 				},
@@ -759,21 +753,21 @@ func PCRFsCluster(pcrfsByName map[string]generators.ComponentData) []PCRFCluster
 			}
 			cluster := PCRFCluster{
 				Master: HOST{
-					ANSIBLE_HOST:   master.Networks["Core-DevOps-3"].IP,
+					ANSIBLE_HOST:   master.Networks["OAM"].IP,
 					ManagementPort: mme_managementPort,
-					User:           UserHost,
-					Password:       "q",
-					BecomePass:     "q",
+					User:           USER,
+					Password:       PASSWORD,
+					BecomePass:     PASSWORD,
 					KeepalivedRole: "BACKUP",
 					KeepalivedPrio: 101,
 				},
 
 				Backup: HOST{
-					ANSIBLE_HOST:   backup.Networks["Core-DevOps-3"].IP,
+					ANSIBLE_HOST:   backup.Networks["OAM"].IP,
 					ManagementPort: mme_managementPort,
-					User:           UserHost,
-					Password:       "q",
-					BecomePass:     "q",
+					User:           USER,
+					Password:       PASSWORD,
+					BecomePass:     PASSWORD,
 					KeepalivedRole: "BACKUP",
 					KeepalivedPrio: 100,
 				},
@@ -801,7 +795,7 @@ func Data(mmesByName, hsssByName, sgwcsByName, sgwusByName, smfsByName, upfsByNa
 	sgwuCluster := SgwuCluster(sgwusByName)
 
 	DataTempStruct := TemplateData{
-		User:                UserHost,
+		User:                USER,
 		Core_Name:           Core_Name,
 		Var_path:            Var_path,
 		Tls_path:            Tls_path,

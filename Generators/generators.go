@@ -24,7 +24,6 @@ func BuildAllMMEs(componentData map[string]ComponentData) map[string]ComponentDa
 			Networks:            nets.Networks,
 			ComponentsToConnect: nets.ComponentsToConnect,
 		}
-		// mmes = append(mmes, mme)
 		mmesByName[name] = mme
 	}
 	return mmesByName
@@ -39,7 +38,6 @@ func BuildAllHSSs(componentData map[string]ComponentData) map[string]ComponentDa
 			Networks:            nets.Networks,
 			ComponentsToConnect: nets.ComponentsToConnect,
 		}
-		// hsss = append(hsss, hss)
 		hsssByName[name] = hss
 	}
 	return hsssByName
@@ -53,7 +51,6 @@ func BuildAllSGWCs(componentData map[string]ComponentData) map[string]ComponentD
 			Networks:            nets.Networks,
 			ComponentsToConnect: nets.ComponentsToConnect,
 		}
-		// sgwcs = append(sgwcs, sgwc)
 		sgwcsByName[name] = sgwc
 	}
 	return sgwcsByName
@@ -67,7 +64,6 @@ func BuildAllSGWUs(componentData map[string]ComponentData) map[string]ComponentD
 			Networks:            nets.Networks,
 			ComponentsToConnect: nets.ComponentsToConnect,
 		}
-		// sgwus = append(sgwus, sgwu)
 		sgwusByName[name] = sgwu
 	}
 	return sgwusByName
@@ -81,7 +77,6 @@ func BuildAllSMFs(componentData map[string]ComponentData) map[string]ComponentDa
 			Networks:            nets.Networks,
 			ComponentsToConnect: nets.ComponentsToConnect,
 		}
-		// smfs = append(smfs, smf)
 		smfsByName[name] = smf
 	}
 	return smfsByName
@@ -95,7 +90,6 @@ func BuildAllUPFs(componentData map[string]ComponentData) map[string]ComponentDa
 			Networks:            nets.Networks,
 			ComponentsToConnect: nets.ComponentsToConnect,
 		}
-		// upfs = append(upfs, upf)
 		upfsByName[name] = upf
 	}
 	return upfsByName
@@ -109,7 +103,6 @@ func BuildAllPCRFs(componentData map[string]ComponentData) map[string]ComponentD
 			Networks:            nets.Networks,
 			ComponentsToConnect: nets.ComponentsToConnect,
 		}
-		// pcrfs = append(pcrfs, pcrf)
 		pcrfsByName[name] = pcrf
 	}
 	return pcrfsByName
