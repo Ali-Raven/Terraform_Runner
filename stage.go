@@ -41,19 +41,19 @@ func MainStage(wdir, hostname string, componentID int8) {
 	case "1":
 		switch componentID {
 		case 1:
-			Oranos_configure(wdir , hostname)
+			Oranos_configure(wdir, hostname)
 		case 2:
-			Nozaros_configure(wdir , hostname)
+			Nozaros_configure(wdir, hostname)
 		}
 		return
 	case "2":
-		terraform_plan(&mode, wdir , hostname, componentID)
+		terraform_plan(&mode, wdir, hostname, componentID)
 		return
 	case "3":
-		terraform_apply(&mode, wdir , hostname, componentID)
+		terraform_apply(&mode, wdir, hostname, componentID)
 		return
 	case "4":
-		terraform_destroy(&mode, wdir , hostname, componentID)
+		terraform_destroy(&mode, wdir, hostname, componentID)
 		return
 	case "5":
 		os.Exit(0)
@@ -65,7 +65,7 @@ func MainStage(wdir, hostname string, componentID int8) {
 	}
 }
 
-func terraform_plan(mode *string, wdir , hostname string, componentID int8) {
+func terraform_plan(mode *string, wdir, hostname string, componentID int8) {
 	fmt.Printf(color.Yellow+"command ==> terraform %v ==> executing ...\n\n"+color.Reset, *mode)
 	time.Sleep(2 * time.Second)
 	cmd := exec.Command("terraform", "plan")
@@ -85,19 +85,19 @@ func terraform_plan(mode *string, wdir , hostname string, componentID int8) {
 		fmt.Println(color.Green + "\nSuccessfully Executed." + color.Reset)
 	}
 
-	MainStage(wdir , hostname , componentID)
+	MainStage(wdir, hostname, componentID)
 }
-func terraform_apply(mode *string, wdir , hostname string, componentID int8) {
+func terraform_apply(mode *string, wdir, hostname string, componentID int8) {
 	*mode = "apply"
 	baseCommand("terraform", "apply", "--auto-approve", wdir, mode)
 	// main()
-	MainStage(wdir , hostname , componentID)
+	MainStage(wdir, hostname, componentID)
 }
-func terraform_destroy(mode *string, wdir , hostname string, componentID int8) {
+func terraform_destroy(mode *string, wdir, hostname string, componentID int8) {
 	*mode = "destroy"
 	baseCommand("terraform", "destroy", "--auto-approve", wdir, mode)
 	// main()
-	MainStage(wdir , hostname , componentID)
+	MainStage(wdir, hostname, componentID)
 }
 
 func baseCommand(com1, com2, com3, wdir string, mode *string) {

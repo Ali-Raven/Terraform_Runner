@@ -10,48 +10,54 @@ import (
 )
 
 var (
-	ssh_defaultPort     int = 5119
-	sgwc_managementPort int = ssh_defaultPort
-	sgwc_s11Port        int = 2123
-	sgwc_sxaPort        int = 8805
-	sgwc_s5cPort        int = 2124
-	sgwu_managementPort int = ssh_defaultPort
-	sgwu_sxaPort        int = 2152
-	sgwu_s5uPort        int = 8805
-	sgwu_s1uPort        int = 3333
-	upf_managementPort  int = ssh_defaultPort
-	upf_sxbPort         int = 8805
-	upf_sxuPort         int = 2152
-	upf_s5uPort         int = 2153
-	upf_SGI             string
-	upf_sgiPort         int = 2152
-	smf_managementPort  int = ssh_defaultPort
-	smf_gxPort          int = 2123
-	gx_secPort          int = 5868
-	smf_s5cPort         int = 8805
-	smf_sxbPort         int = 2153
-	smf_sxuPort         int = 8806
-	mme_s11Port         int = 2123
-	mme_s1apPort        int = 36412
-	mme_s6aPort         int = 2221
-	s6a_secPort         int = 5868
-	mme_managementPort  int = ssh_defaultPort
-	hss_managementPort  int = ssh_defaultPort
-	hss_s6aPort         int = 2223
-	pcrf_managementPort int = ssh_defaultPort
-	pcrf_gxPort         int = 4434
-	USER                string = "{{ USER }}"
-	PASSWORD            string = "{{ PASSWORD }}"
-	Core_Name           string
-	Var_path            string
-	Var_path_Comps      string
-	Tls_path            string
-	Inventory_hostname  string
-	Diam_Realm          string
-	FlagErr             bool
-	Diam_groupNames     string
-	Non_diam_groupNames string
-	Var_path_diameter   string
+	ssh_defaultPort      int = 5119
+	sgwc_managementPort  int = ssh_defaultPort
+	sgwc_s11Port         int = 2123
+	sgwc_sxaPort         int = 8805
+	sgwc_s5cPort         int = 2124
+	sgwu_managementPort  int = ssh_defaultPort
+	sgwu_sxaPort         int = 2152
+	sgwu_s5uPort         int = 8805
+	sgwu_s1uPort         int = 3333
+	upf_managementPort   int = ssh_defaultPort
+	upf_sxbPort          int = 8805
+	upf_sxuPort          int = 2152
+	upf_s5uPort          int = 2153
+	upf_SGI              string
+	upf_sgiPort          int    = 2152
+	smf_managementPort   int    = ssh_defaultPort
+	smf_gxPort           int    = 2123
+	gx_secPort           int    = 5868
+	smf_s5cPort          int    = 8805
+	smf_sxbPort          int    = 2153
+	smf_sxuPort          int    = 8806
+	mme_s11Port          int    = 2123
+	mme_s1apPort         int    = 36412
+	mme_s6aPort          int    = 2221
+	s6a_secPort          int    = 5868
+	mme_managementPort   int    = ssh_defaultPort
+	hss_managementPort   int    = ssh_defaultPort
+	hss_s6aPort          int    = 2223
+	pcrf_managementPort  int    = ssh_defaultPort
+	pcrf_gxPort          int    = 4434
+	USER                 string = "{{ USER }}"
+	PASSWORD             string = "{{ PASSWORD }}"
+	Core_Name            string
+	Var_path             string
+	Var_path_Comps       string
+	Tls_path             string
+	Config_path          string
+	Bin_path             string
+	Core_name_v          string
+	V                    string = ""
+	Core_source_path     string
+	Inventory_hostname   string
+	Diam_Realm           string
+	FlagErr              bool
+	Diam_groupNames      string
+	Non_diam_groupNames  string
+	Var_path_diameter    string
+	Hardcoded_Diam_Realm string
 )
 
 type HOST struct {
@@ -128,6 +134,7 @@ type MMECluster struct {
 
 	S6aAddr    string
 	S6aPort    int
+	S6aSecPort int
 	S6aSubnet  int
 	S6aGateway string
 
@@ -154,6 +161,7 @@ type SMFCluster struct {
 
 	GxAddr    string
 	GxPort    int
+	GxSecPort int
 	GxSubnet  int
 	GxGateway string
 
@@ -191,6 +199,7 @@ type HSSCluster struct {
 
 	S6aAddr    string
 	S6aPort    int
+	S6aSecPort int
 	S6aSubnet  int
 	S6aGateway string
 
@@ -202,23 +211,30 @@ type PCRFCluster struct {
 
 	GxAddr    string
 	GxPort    int
+	GxSecPort int
 	GxSubnet  int
 	GxGateway string
 
 	Components []string
 }
 type TemplateData struct {
-	User                string
-	Var_path            string
-	Core_Name           string
-	Tls_path            string
-	Inventory_hostname  string
-	Diam_Realm          string
-	FlagErr             bool
-	Diam_groupNames     string
-	Non_diam_groupNames string
-	UserHost            string
-	Var_path_diameter   string
+	User                 string
+	Var_path             string
+	Core_Name            string
+	Config_path          string
+	Bin_path             string
+	Core_name_v          string
+	V                    string
+	Core_source_path     string
+	Tls_path             string
+	Inventory_hostname   string
+	FlagErr              bool
+	Diam_groupNames      string
+	Non_diam_groupNames  string
+	UserHost             string
+	Var_path_diameter    string
+	Diam_Realm           string
+	Hardcoded_Diam_Realm string
 
 	MMEsCluster  []MMECluster
 	HSSsCluster  []HSSCluster
@@ -245,7 +261,6 @@ type TemplateData struct {
 // 		return ""
 // 	}
 // }
-
 
 func extractNumber(name string) int {
 	re := regexp.MustCompile(`\d+`)
@@ -300,7 +315,7 @@ func UpfCluster(upfsByName map[string]generators.ComponentData) []UPFCluster {
 					Password:       PASSWORD,
 					BecomePass:     PASSWORD,
 					KeepalivedRole: "BACKUP",
-					KeepalivedPrio: 101,
+					KeepalivedPrio: 150,
 				},
 
 				Backup: HOST{
@@ -380,8 +395,8 @@ func SgwcCluster(sgwcsByName map[string]generators.ComponentData) []SGWCCluster 
 					User:           USER,
 					Password:       PASSWORD,
 					BecomePass:     PASSWORD,
-					KeepalivedRole: "MASTER",
-					KeepalivedPrio: 101,
+					KeepalivedRole: "BACKUP",
+					KeepalivedPrio: 150,
 				},
 
 				Backup: HOST{
@@ -537,7 +552,7 @@ func MMeCluster(mmesByName, smfsByName map[string]generators.ComponentData) []MM
 					Password:       PASSWORD,
 					BecomePass:     PASSWORD,
 					KeepalivedRole: "BACKUP",
-					KeepalivedPrio: 101,
+					KeepalivedPrio: 150,
 				},
 
 				Backup: HOST{
@@ -567,6 +582,7 @@ func MMeCluster(mmesByName, smfsByName map[string]generators.ComponentData) []MM
 
 				S6aAddr:    master.Networks["s6a-"+strings.ToLower(clusterName)].IP,
 				S6aPort:    mme_s6aPort,
+				S6aSecPort: s6a_secPort,
 				S6aSubnet:  master.Networks["s6a-"+strings.ToLower(clusterName)].Subnet,
 				S6aGateway: master.Networks["s6a-"+strings.ToLower(clusterName)].Gateway,
 				Components: master.ComponentsToConnect,
@@ -617,7 +633,7 @@ func SMfCluster(smfsByName map[string]generators.ComponentData) []SMFCluster {
 					Password:       PASSWORD,
 					BecomePass:     PASSWORD,
 					KeepalivedRole: "BACKUP",
-					KeepalivedPrio: 101,
+					KeepalivedPrio: 150,
 				},
 
 				Backup: HOST{
@@ -647,6 +663,7 @@ func SMfCluster(smfsByName map[string]generators.ComponentData) []SMFCluster {
 
 				GxAddr:     master.Networks["gx-"+strings.ToLower(clusterName)].IP,
 				GxPort:     smf_gxPort,
+				GxSecPort:  gx_secPort,
 				GxSubnet:   master.Networks["gx-"+strings.ToLower(clusterName)].Subnet,
 				GxGateway:  master.Networks["gx-"+strings.ToLower(clusterName)].Gateway,
 				Components: master.ComponentsToConnect,
@@ -696,7 +713,7 @@ func HSsCluster(hsssByName map[string]generators.ComponentData) []HSSCluster {
 					Password:       PASSWORD,
 					BecomePass:     PASSWORD,
 					KeepalivedRole: "BACKUP",
-					KeepalivedPrio: 101,
+					KeepalivedPrio: 150,
 				},
 
 				Backup: HOST{
@@ -711,6 +728,7 @@ func HSsCluster(hsssByName map[string]generators.ComponentData) []HSSCluster {
 
 				S6aAddr:    master.Networks["s6a-"+strings.ToLower(name)].IP,
 				S6aPort:    hss_s6aPort,
+				S6aSecPort: s6a_secPort,
 				S6aSubnet:  master.Networks["s6a-"+strings.ToLower(name)].Subnet,
 				S6aGateway: master.Networks["s6a-"+strings.ToLower(name)].Gateway,
 				Components: master.ComponentsToConnect,
@@ -759,7 +777,7 @@ func PCRFsCluster(pcrfsByName map[string]generators.ComponentData) []PCRFCluster
 					Password:       PASSWORD,
 					BecomePass:     PASSWORD,
 					KeepalivedRole: "BACKUP",
-					KeepalivedPrio: 101,
+					KeepalivedPrio: 150,
 				},
 
 				Backup: HOST{
@@ -774,6 +792,7 @@ func PCRFsCluster(pcrfsByName map[string]generators.ComponentData) []PCRFCluster
 
 				GxAddr:     master.Networks["gx-"+strings.ToLower(name)].IP,
 				GxPort:     hss_s6aPort,
+				GxSecPort:  gx_secPort,
 				GxSubnet:   master.Networks["gx-"+strings.ToLower(name)].Subnet,
 				GxGateway:  master.Networks["gx-"+strings.ToLower(name)].Gateway,
 				Components: master.ComponentsToConnect,
@@ -795,22 +814,28 @@ func Data(mmesByName, hsssByName, sgwcsByName, sgwusByName, smfsByName, upfsByNa
 	sgwuCluster := SgwuCluster(sgwusByName)
 
 	DataTempStruct := TemplateData{
-		User:                USER,
-		Core_Name:           Core_Name,
-		Var_path:            Var_path,
-		Tls_path:            Tls_path,
-		Inventory_hostname:  Inventory_hostname,
-		Diam_Realm:          Diam_Realm,
-		Diam_groupNames:     Diam_groupNames,
-		Non_diam_groupNames: Non_diam_groupNames,
-		Var_path_diameter:   Var_path_diameter,
-		SGWCsCluster:        sgwcCluster,
-		MMEsCluster:         mmeCluster,
-		SMFsCluster:         smfCluster,
-		HSSsCluster:         hssCluster,
-		PCRFsCluster:        pcrfCluster,
-		UPFsCluster:         upfCluster,
-		SGWUsCluster:        sgwuCluster,
+		User:                 USER,
+		Core_Name:            Core_Name,
+		Var_path:             Var_path,
+		Config_path:          Config_path,
+		Bin_path:             Bin_path,
+		Core_name_v:          Core_name_v,
+		Core_source_path:     Core_source_path,
+		V:                    V,
+		Tls_path:             Tls_path,
+		Inventory_hostname:   Inventory_hostname,
+		Diam_groupNames:      Diam_groupNames,
+		Non_diam_groupNames:  Non_diam_groupNames,
+		Var_path_diameter:    Var_path_diameter,
+		Hardcoded_Diam_Realm: Hardcoded_Diam_Realm,
+		Diam_Realm:           Diam_Realm,
+		SGWCsCluster:         sgwcCluster,
+		MMEsCluster:          mmeCluster,
+		SMFsCluster:          smfCluster,
+		HSSsCluster:          hssCluster,
+		PCRFsCluster:         pcrfCluster,
+		UPFsCluster:          upfCluster,
+		SGWUsCluster:         sgwuCluster,
 	}
 
 	return DataTempStruct

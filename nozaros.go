@@ -6,6 +6,7 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
+	"log"
 	"os"
 	"slices"
 	"strings"
@@ -14,6 +15,8 @@ import (
 	"github.com/AlecAivazis/survey/v2"
 	"github.com/TwiN/go-color"
 	"github.com/joho/godotenv"
+	"github.com/ncruces/zenity"
+	api "github.com/terraform_runner/apis"
 	"github.com/terraform_runner/helper"
 )
 
@@ -47,6 +50,7 @@ var (
 	vCenterUserName           string
 	vCenterPass               string
 	ds                        []string
+	vmName                    string
 )
 
 var (
@@ -102,7 +106,7 @@ func Nozaros_configure(wdir, hostname string) {
 	fmt.Println(color.Yellow + "\n================" + color.Reset)
 	fmt.Println(color.Yellow + "\nOptions : \n" + color.Reset)
 	var choice []string
-	choice = []string{"create new VMs", "Modify existing VMs", "Delete VMs", "Generating Inventory.yml file", "Test enviroment", "Main menu", "Exit"}
+	choice = []string{"create new VMs", "Modify existing VMs", "Delete VMs", "Generating Inventory.yml file", "Test enviroment", "Deploy OVF template", "Main menu", "Exit"}
 	optionStr := helper.AskSelect(choice)
 
 	switch optionStr {
@@ -127,6 +131,8 @@ func Nozaros_configure(wdir, hostname string) {
 		vCenterPass := os.Getenv("vCenterPassword")
 
 		fmt.Println(vCneterURL, vCenterUser, vCenterPass)
+	case "Deploy OVF template":
+		OpenningFileExplorer(hostname, wdir)
 	case "Main menu":
 		fmt.Println(color.Yellow + "\nReturning to main menu..." + color.Reset)
 		time.Sleep(1 * time.Second)
@@ -167,24 +173,24 @@ func createNewVMs(reader *bufio.Reader, wdir, hostname string) {
 		if errVM != nil {
 			panic(errVM)
 		}
-		for i := 0; i < numVMcount; i++ {
-			fmt.Printf("%s%s Connecting to vCenter server ...%s%s", color.Bold, color.Yellow, color.Reset, color.Reset)
+		for i := range numVMcount {
+			fmt.Printf("%s%sConnecting to vCenter server ...%s%s\n\n", color.Bold, color.Yellow, color.Reset, color.Reset)
 
-			ds, dErr := GetAllDatastoreName(vCenterURL, vCenterUserName, vCenterPass)
+			ds, dErr := api.GetAllDatastoreName(vCenterURL, vCenterUserName, vCenterPass)
 			if dErr != nil {
 				fmt.Printf("Error: %v\n", dErr)
 				os.Exit(1)
 			}
 			fmt.Printf(color.Yellow+"\n--- VM %d ---\n"+color.Reset, i+1)
 
-			collected := collectVM(reader, ds , wdir , hostname)
+			collected := collectVM(reader, ds, wdir, hostname)
 
 			for _, vm := range collected {
 				vms = append(vms, vm)
 			}
 		}
 
-		retrunedPreview := preview(vms, reader, wdir , hostname)
+		retrunedPreview := preview(vms, reader, wdir, hostname)
 		if retrunedPreview == 0 {
 			return
 		}
@@ -209,7 +215,7 @@ func loadExistingVMs(wdir string) ([]VM, error) {
 	}
 	return tfvars.VMs, nil
 }
-func preview(vms []VM, reader *bufio.Reader, wdir , hostname string) int {
+func preview(vms []VM, reader *bufio.Reader, wdir, hostname string) int {
 	data := TFvars{VMs: vms}
 	jsonBytes, _ := json.MarshalIndent(data, "", "  ")
 
@@ -230,14 +236,14 @@ func preview(vms []VM, reader *bufio.Reader, wdir , hostname string) int {
 	case "2":
 		fmt.Println(color.Yellow + "\nRe-enter VM data...\n" + color.Reset)
 
-		collected := collectVM(reader, ds , wdir , hostname)
+		collected := collectVM(reader, ds, wdir, hostname)
 
 		for _, vm := range collected {
 			vms = append(vms, vm)
 		}
 
 		// fmt.Println(vms)
-		preview(vms, reader, wdir , hostname)
+		preview(vms, reader, wdir, hostname)
 	case "3":
 		fmt.Println(color.Red + "Canceled ❌" + color.Reset)
 		fmt.Println("returning to the main menu ...")
@@ -301,9 +307,9 @@ func isVMNameIsCoreComponent(CompsConnectedItems, targets []string, wdir, hostna
 	_, err := ComponentsToConnectValidations(componentsToConnect, targets)
 	if err != nil {
 		fmt.Printf("%sError: %v%s\n", color.Red, err, color.Reset)
-		isVMNameIsCoreComponent(CompsConnectedItems , targets , wdir , hostname)
+		isVMNameIsCoreComponent(CompsConnectedItems, targets, wdir, hostname)
 	} else {
-		fmt.Println(color.Green+"Validation passed !\n"+color.Reset)
+		fmt.Println(color.Green + "Validation passed !\n" + color.Reset)
 	}
 	backupComps = helper.Ask("Do you Want Backup Option for this Component ?", backupComps)
 	if backupComps == "y" {
@@ -317,7 +323,7 @@ func isVMNameIsCoreComponent(CompsConnectedItems, targets []string, wdir, hostna
 			fmt.Println(color.Yellow+"try this section again with True value ", color.Reset)
 			fmt.Println(color.Yellow+"Returning ...", color.Reset)
 			time.Sleep(1 * time.Second)
-			isVMNameIsCoreComponent(CompsConnectedItems, targets , wdir , hostname)
+			isVMNameIsCoreComponent(CompsConnectedItems, targets, wdir, hostname)
 		}
 	} else {
 		fmt.Println(color.Yellow + "Skipping ..." + color.Reset)
@@ -325,7 +331,7 @@ func isVMNameIsCoreComponent(CompsConnectedItems, targets []string, wdir, hostna
 	}
 }
 
-func collectVM(reader *bufio.Reader, ds []string, wdir , hostname string) []VM {
+func collectVM(reader *bufio.Reader, ds []string, wdir, hostname string) []VM {
 
 	VmName = helper.Ask("Enter VM Name:", VmName)
 	VmTargetHost = helper.Ask("Enter Target Host of VM :", VmTargetHost)
@@ -338,19 +344,19 @@ func collectVM(reader *bufio.Reader, ds []string, wdir , hostname string) []VM {
 
 	switch {
 	case strings.Contains(strings.ToUpper(componentName), "MME"):
-		isVMNameIsCoreComponent(MMEConnectedComps, []string{"HSS", "SMF", "SGWC"} , wdir , hostname)
+		isVMNameIsCoreComponent(MMEConnectedComps, []string{"HSS", "SMF", "SGWC"}, wdir, hostname)
 	case strings.Contains(strings.ToUpper(componentName), "HSS"):
-		isVMNameIsCoreComponent(HSSConnectedComps, []string{"MME"}, wdir , hostname)
+		isVMNameIsCoreComponent(HSSConnectedComps, []string{"MME"}, wdir, hostname)
 	case strings.Contains(strings.ToUpper(componentName), "SGWC"):
-		isVMNameIsCoreComponent(SGWCConnectedComps, []string{"MME", "SMF", "SGWU"}, wdir , hostname)
+		isVMNameIsCoreComponent(SGWCConnectedComps, []string{"MME", "SMF", "SGWU"}, wdir, hostname)
 	case strings.Contains(strings.ToUpper(componentName), "SGWU"):
-		isVMNameIsCoreComponent(SGWUConnectedComps, []string{"SGWC", "UPF"}, wdir , hostname)
+		isVMNameIsCoreComponent(SGWUConnectedComps, []string{"SGWC", "UPF"}, wdir, hostname)
 	case strings.Contains(strings.ToUpper(componentName), "SMF"):
-		isVMNameIsCoreComponent(SMFConnectedComps, []string{"SGWC", "PCRF", "UPF"}, wdir , hostname)
+		isVMNameIsCoreComponent(SMFConnectedComps, []string{"SGWC", "PCRF", "UPF"}, wdir, hostname)
 	case strings.Contains(strings.ToUpper(componentName), "UPF"):
-		isVMNameIsCoreComponent(UPFConnectedComps, []string{"SMF", "SGWU"}, wdir , hostname)
+		isVMNameIsCoreComponent(UPFConnectedComps, []string{"SMF", "SGWU"}, wdir, hostname)
 	case strings.Contains(strings.ToUpper(componentName), "PCRF"):
-		isVMNameIsCoreComponent(PCRFConnectedComps, []string{"SMF"}, wdir , hostname)
+		isVMNameIsCoreComponent(PCRFConnectedComps, []string{"SMF"}, wdir, hostname)
 	default:
 
 	}
@@ -797,3 +803,44 @@ func DeleteVMs(reader *bufio.Reader, wdir, hostname string) {
 }
 
 // =========================================================================== Delete VMs (END) ==========================================================================
+
+// =========================================================================== Deploy OVF template (START) ==========================================================================
+func OpenningFileExplorer(hostname, wdir string) {
+	fmt.Println(color.Yellow + "Opening file explorer... Please select your OVF file." + color.Reset)
+
+	// Open native OS File Explorer filtered specifically for .ovf files
+	ovfPath, err := zenity.SelectFile(
+		zenity.Title("Select OVF File to Deploy"),
+		zenity.FileFilter{
+			Name:     "OVF Template (*.ovf)",
+			Patterns: []string{"*.ovf"},
+		},
+	)
+
+	// Handle user cancellation or dialog errors
+	if err != nil {
+		if err == zenity.ErrCanceled {
+			fmt.Println(color.Red + "Operation cancelled by user." + color.Reset)
+			return
+		}
+		log.Fatalf("%sError opening file dialog: %v%s", color.Red, err, color.Reset)
+	}
+
+	fmt.Printf("\nSelected OVF File: %s\n", ovfPath)
+
+	// Verify that associated OVF sidecar files (like .vmdk) exist in the same folder
+	if err := api.ValidateOvfDirectory(ovfPath); err != nil {
+		log.Fatalf("%sValidation failed: %v%s", color.Red, err, color.Reset)
+	}
+
+	// asking vm name from user
+	vmName = helper.Ask("Enter VM Name : ", vmName)
+	fmt.Println(color.Yellow + "\nPress ENTER to start deploying to vCenter..." + color.Reset)
+	var input string
+	fmt.Scanln(&input)
+
+	// Proceed with your govmomi vCenter deployment using ovfPath
+	api.DeployOvfTemplateOnVcenter(hostname, wdir, ovfPath, vmName)
+}
+
+// =========================================================================== Deploy OVF template (END) ==========================================================================
