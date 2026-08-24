@@ -101,7 +101,7 @@ func GetAllDatastoreName(vcURL, username, pass string) ([]string, error) {
 	return dsNames, nil
 }
 
-func DeployOvfTemplateOnVcenter(hostname, wdir, ovfFilePath, vmName string) {
+func DeployOvfTemplateOnVcenter(hostname, wdir, ovfFilePath, vmName , diskProvisionType string) {
 	fmt.Printf("\n%s%sDeploying VMs section ...%s%s\n", color.Bold, color.Yellow, color.Reset, color.Reset)
 	time.Sleep(1 * time.Second)
 
@@ -207,6 +207,7 @@ func DeployOvfTemplateOnVcenter(hostname, wdir, ovfFilePath, vmName string) {
 	// Build Import Spec
 	crd := types.OvfCreateImportSpecParams{
 		EntityName: vmName,
+		DiskProvisioning: diskProvisionType,
 	}
 
 	spec, err := ovfManager.CreateImportSpec(ctx, string(ovfContent), rp, ds, &crd)

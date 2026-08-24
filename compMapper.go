@@ -26,9 +26,9 @@ type ComponentMapper struct {
 }
 
 // this function generates the network mapping for a given component (e.g., MME, HSS, etc.) based on the provided VM list.
-func NetworkGeneratorComps(CompsName string, VmList map[string]VM) map[string]generators.ComponentData {
+func NetworkGeneratorComps(CompsName string, VmList map[string]VM) DataComp {
 	CompsNetworksMaps := make(map[string]map[string]generators.NetworksStructure)
-	result := make(map[string]generators.ComponentData)
+	result := make(DataComp)
 
 	for vmName, vm := range VmList {
 
@@ -61,7 +61,7 @@ func NetworkGeneratorComps(CompsName string, VmList map[string]VM) map[string]ge
 	return result
 }
 
-func Yml(wdir string, vms []VM) {
+func YmlCompMapper(wdir string, vms []VM) {
 	// project_path := currentDir + "/ansible-core-deploy"
 	// fmt.Println(vms[0].Networks[0].IP)
 
@@ -140,9 +140,6 @@ func Yml(wdir string, vms []VM) {
 
 	givenDataTemplate := Data(mmesByName, hsssByName, sgwcsByName, sgwusByName, smfsByName, upfsByName, pcrfsByName)
 
-	// getting the template from the Template package
-	RecivedYamlData := t.TemplateYML()
-
 	funcMap := template.FuncMap{
 		"add": func(a, b int) int {
 			return a + b
@@ -154,7 +151,7 @@ func Yml(wdir string, vms []VM) {
 			return ((a + 1) * 30000)
 		},
 	}
-	templateTest := template.Must(template.New("yaml").Funcs(funcMap).Parse(RecivedYamlData))
+	templateTest := template.Must(template.New("yaml").Funcs(funcMap).Parse(t.TemplateYML()))
 
 	var buf bytes.Buffer
 

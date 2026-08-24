@@ -117,7 +117,7 @@ func Nozaros_configure(wdir, hostname string) {
 	case "Delete VMs":
 		DeleteVMs(reader, wdir, hostname)
 	case "Generating Inventory.yml file":
-		Yml(wdir, vms)
+		YmlCompMapper(wdir, vms)
 		time.Sleep(1 * time.Second)
 		Nozaros_configure(wdir, hostname)
 	case "Test enviroment":
@@ -835,12 +835,13 @@ func OpenningFileExplorer(hostname, wdir string) {
 
 	// asking vm name from user
 	vmName = helper.Ask("Enter VM Name : ", vmName)
+	diskProvisionType := helper.AskSelect([]string{"thin" , "thick" , "eager"})
 	fmt.Println(color.Yellow + "\nPress ENTER to start deploying to vCenter..." + color.Reset)
 	var input string
 	fmt.Scanln(&input)
 
 	// Proceed with your govmomi vCenter deployment using ovfPath
-	api.DeployOvfTemplateOnVcenter(hostname, wdir, ovfPath, vmName)
+	api.DeployOvfTemplateOnVcenter(hostname, wdir, ovfPath, vmName , diskProvisionType)
 }
 
 // =========================================================================== Deploy OVF template (END) ==========================================================================
