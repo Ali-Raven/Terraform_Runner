@@ -1,4 +1,4 @@
-package main
+package oranos
 
 import (
 	"fmt"
@@ -12,7 +12,7 @@ import (
 	"github.com/terraform_runner/helper"
 )
 
-func Oranos_configure(wdir, hostname string) {
+func OranosConfigure(wdir, hostname string) {
 	var builder strings.Builder
 
 	currentDir, err := os.Getwd()
@@ -24,24 +24,25 @@ func Oranos_configure(wdir, hostname string) {
 	text := string(content)
 
 	vlans := getVlans(text)
-	checked_vlans := vlanList(vlans, text, filename)
+	checkedVlans := vlanList(vlans, text, filename)
 
 	text = removeVlansBlock(text)
 
 	builder.WriteString(strings.TrimSpace(text))
 	builder.WriteString("\n\nvlans = {\n")
 
-	for name, id := range checked_vlans {
+	for name, id := range checkedVlans {
 		builder.WriteString(fmt.Sprintf("  %s = %s\n", name, id))
 	}
 
 	builder.WriteString("}\n")
 
-	os.WriteFile(filename, []byte(builder.String()), 0644)
+	os.WriteFile(filename, []byte(builder.String()), 0o644)
 
 	time.Sleep(2 * time.Second)
 	fmt.Printf("%s%s Updated Successfully %s\n", color.Green, filename, color.Reset)
-	MainStage(wdir, hostname, 1)
+	//	stage.MainStage(wdir, hostname, 1)
+	return
 	// main()
 }
 
@@ -121,6 +122,7 @@ func ModifyVlans(vlans map[string]string, text string, filename string) {
 	// 6. Save changes using your existing refactor function
 	refactorVlans(text, vlans, filename)
 }
+
 func vlanList(vlans map[string]string, text string, filename string) map[string]string {
 	// var builder strings.Builder
 	// filename := "terraform.tfvars"
@@ -184,7 +186,7 @@ func vlanList(vlans map[string]string, text string, filename string) map[string]
 	case "Main Menu":
 		fmt.Println(color.Yellow + "loading main menu ..." + color.Reset)
 		time.Sleep(1 * time.Second)
-		main()
+		return vlans
 	default:
 		fmt.Println(color.Yellow + "Warning : Invalid choice, returning to options." + color.Reset)
 		time.Sleep(1 * time.Second)
@@ -342,7 +344,7 @@ func refactorVlans(text string, vlans map[string]string, filename string) {
 
 	builder.WriteString("}\n")
 
-	os.WriteFile(filename, []byte(builder.String()), 0644)
+	os.WriteFile(filename, []byte(builder.String()), 0o644)
 
 	time.Sleep(1 * time.Second)
 	fmt.Printf("%s%s Updated Successfully %s\n", color.Green, filename, color.Reset)

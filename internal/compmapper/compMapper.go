@@ -1,4 +1,5 @@
-package main
+// Package compmapper is for iterating over this Map that create in generators and spliting the network properties of that
+package compmapper
 
 import (
 	"bytes"
@@ -9,8 +10,10 @@ import (
 	"time"
 
 	"github.com/TwiN/go-color"
-	generators "github.com/terraform_runner/Generators"
-	t "github.com/terraform_runner/Template"
+	generators "github.com/terraform_runner/internal/generators"
+	t "github.com/terraform_runner/internal/template"
+	typesstructs "github.com/terraform_runner/internal/typesStructs"
+	"github.com/terraform_runner/internal/vmstore"
 )
 
 type DataComp map[string]generators.ComponentData
@@ -26,7 +29,7 @@ type ComponentMapper struct {
 }
 
 // this function generates the network mapping for a given component (e.g., MME, HSS, etc.) based on the provided VM list.
-func NetworkGeneratorComps(CompsName string, VmList map[string]VM) DataComp {
+func NetworkGeneratorComps(CompsName string, VmList map[string]typesstructs.VM) DataComp {
 	CompsNetworksMaps := make(map[string]map[string]generators.NetworksStructure)
 	result := make(DataComp)
 
@@ -61,45 +64,43 @@ func NetworkGeneratorComps(CompsName string, VmList map[string]VM) DataComp {
 	return result
 }
 
-func YmlCompMapper(wdir string, vms []VM) {
+func YmlCompMapper(wdir string, vms []typesstructs.VM) {
 	// project_path := currentDir + "/ansible-core-deploy"
 	// fmt.Println(vms[0].Networks[0].IP)
 
 	fmt.Println(color.Yellow + "loading Existing VMs info ..." + color.Reset)
-	vms, err := loadExistingVMs(wdir)
+	vms, err := vmstore.LoadExistingVMs(wdir)
 	if err != nil {
 		fmt.Println(color.Red + "")
 		panic(err)
 	}
 
 	fmt.Println(color.Green + "VMs loaded Successfully." + color.Reset)
-	for i := 0; i < len(vms); i++ {
-
+	for i := range vms {
 		if len(vms[i].Networks) < 2 {
 			fmt.Printf("%sError : not enough networks interface for %s%s\n", color.Red, vms[i].Name, color.Reset)
 			time.Sleep(300 * time.Millisecond)
 			FlagErr = true
 		}
 	}
-	if FlagErr == true {
+	if FlagErr {
 		return
 	}
 
 	// mapping key for getting VMs list with Name of the vms not by ID
-	VmList := make(map[string]VM)
+	VMList := make(map[string]typesstructs.VM)
 	for _, name := range vms {
-		VmList[name.Name] = name
-
+		VMList[name.Name] = name
 	}
 
 	MapperComp := ComponentMapper{
-		CompsMapsMME: NetworkGeneratorComps("MME", VmList),
-		CompsMapsHSS: NetworkGeneratorComps("HSS", VmList),
-		CompsMapSGWC: NetworkGeneratorComps("SGWC", VmList),
-		CompsMapSGWU: NetworkGeneratorComps("SGWU", VmList),
-		CompsMapSMF:  NetworkGeneratorComps("SMF", VmList),
-		CompsMapUPF:  NetworkGeneratorComps("UPF", VmList),
-		CompsMapPCRF: NetworkGeneratorComps("PCRF", VmList),
+		CompsMapsMME: NetworkGeneratorComps("MME", VMList),
+		CompsMapsHSS: NetworkGeneratorComps("HSS", VMList),
+		CompsMapSGWC: NetworkGeneratorComps("SGWC", VMList),
+		CompsMapSGWU: NetworkGeneratorComps("SGWU", VMList),
+		CompsMapSMF:  NetworkGeneratorComps("SMF", VMList),
+		CompsMapUPF:  NetworkGeneratorComps("UPF", VMList),
+		CompsMapPCRF: NetworkGeneratorComps("PCRF", VMList),
 	}
 
 	// CompsMapsMME := NetworkGeneratorComps("MME", VmList)
@@ -161,7 +162,7 @@ func YmlCompMapper(wdir string, vms []VM) {
 
 	inventoryPath, fileName := "ansible/ansible-core-deploy/inventory/", "main.yml"
 	// fileName := "demo.yml"
-	os.WriteFile(inventoryPath+fileName, buf.Bytes(), 0644)
+	os.WriteFile(inventoryPath+fileName, buf.Bytes(), 0o644)
 	// os.WriteFile(fileName, buf.Bytes(), 0644)
 	fmt.Printf("\n%sGenerating %s  file ...%s", color.Yellow, fileName, color.Reset)
 	time.Sleep(1 * time.Second)

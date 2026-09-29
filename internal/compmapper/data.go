@@ -1,4 +1,4 @@
-package main
+package compmapper
 
 import (
 	"regexp"
@@ -6,7 +6,7 @@ import (
 	"strconv"
 	"strings"
 
-	generators "github.com/terraform_runner/Generators"
+	generators "github.com/terraform_runner/internal/generators"
 )
 
 var (
@@ -61,7 +61,7 @@ var (
 )
 
 type HOST struct {
-	ANSIBLE_HOST   string
+	ANSIBLEHost    string
 	ManagementPort int
 	User           string
 	Password       string
@@ -277,6 +277,7 @@ func extractNumber(name string) int {
 
 	return num
 }
+
 func UpfCluster(upfsByName map[string]generators.ComponentData) []UPFCluster {
 	var (
 		upfNames    []string
@@ -309,7 +310,7 @@ func UpfCluster(upfsByName map[string]generators.ComponentData) []UPFCluster {
 
 			cluster := UPFCluster{
 				Master: HOST{
-					ANSIBLE_HOST:   master.Networks["OAM"].IP,
+					ANSIBLEHost:    master.Networks["OAM"].IP,
 					ManagementPort: mme_managementPort,
 					User:           USER,
 					Password:       PASSWORD,
@@ -319,7 +320,7 @@ func UpfCluster(upfsByName map[string]generators.ComponentData) []UPFCluster {
 				},
 
 				Backup: HOST{
-					ANSIBLE_HOST:   backup.Networks["OAM"].IP,
+					ANSIBLEHost:    backup.Networks["OAM"].IP,
 					ManagementPort: mme_managementPort,
 					User:           USER,
 					Password:       PASSWORD,
@@ -354,6 +355,7 @@ func UpfCluster(upfsByName map[string]generators.ComponentData) []UPFCluster {
 	}
 	return upfClusters
 }
+
 func SgwcCluster(sgwcsByName map[string]generators.ComponentData) []SGWCCluster {
 	var (
 		sgwcNames    []string
@@ -390,7 +392,7 @@ func SgwcCluster(sgwcsByName map[string]generators.ComponentData) []SGWCCluster 
 
 			cluster := SGWCCluster{
 				Master: HOST{
-					ANSIBLE_HOST:   master.Networks["OAM"].IP,
+					ANSIBLEHost:    master.Networks["OAM"].IP,
 					ManagementPort: sgwc_managementPort,
 					User:           USER,
 					Password:       PASSWORD,
@@ -400,7 +402,7 @@ func SgwcCluster(sgwcsByName map[string]generators.ComponentData) []SGWCCluster 
 				},
 
 				Backup: HOST{
-					ANSIBLE_HOST:   backup.Networks["OAM"].IP,
+					ANSIBLEHost:    backup.Networks["OAM"].IP,
 					ManagementPort: sgwc_managementPort,
 					User:           USER,
 					Password:       PASSWORD,
@@ -432,6 +434,7 @@ func SgwcCluster(sgwcsByName map[string]generators.ComponentData) []SGWCCluster 
 
 	return sgwcClusters
 }
+
 func SgwuCluster(sgwusByName map[string]generators.ComponentData) []SGWUCluster {
 	var (
 		sgwuNames    []string
@@ -468,7 +471,7 @@ func SgwuCluster(sgwusByName map[string]generators.ComponentData) []SGWUCluster 
 
 			cluster := SGWUCluster{
 				Master: HOST{
-					ANSIBLE_HOST:   master.Networks["OAM"].IP,
+					ANSIBLEHost:    master.Networks["OAM"].IP,
 					ManagementPort: sgwc_managementPort,
 					User:           USER,
 					Password:       PASSWORD,
@@ -478,7 +481,7 @@ func SgwuCluster(sgwusByName map[string]generators.ComponentData) []SGWUCluster 
 				},
 
 				Backup: HOST{
-					ANSIBLE_HOST:   backup.Networks["OAM"].IP,
+					ANSIBLEHost:    backup.Networks["OAM"].IP,
 					ManagementPort: sgwc_managementPort,
 					User:           USER,
 					Password:       PASSWORD,
@@ -510,8 +513,8 @@ func SgwuCluster(sgwusByName map[string]generators.ComponentData) []SGWUCluster 
 
 	return sgwuClusters
 }
-func MMeCluster(mmesByName, smfsByName map[string]generators.ComponentData) []MMECluster {
 
+func MMeCluster(mmesByName, smfsByName map[string]generators.ComponentData) []MMECluster {
 	var (
 		mmeNames    []string
 		mmeClusters []MMECluster
@@ -546,7 +549,7 @@ func MMeCluster(mmesByName, smfsByName map[string]generators.ComponentData) []MM
 			}
 			cluster := MMECluster{
 				Master: HOST{
-					ANSIBLE_HOST:   master.Networks["OAM"].IP,
+					ANSIBLEHost:    master.Networks["OAM"].IP,
 					ManagementPort: mme_managementPort,
 					User:           USER,
 					Password:       PASSWORD,
@@ -556,7 +559,7 @@ func MMeCluster(mmesByName, smfsByName map[string]generators.ComponentData) []MM
 				},
 
 				Backup: HOST{
-					ANSIBLE_HOST:   backup.Networks["OAM"].IP,
+					ANSIBLEHost:    backup.Networks["OAM"].IP,
 					ManagementPort: mme_managementPort,
 					User:           USER,
 					Password:       PASSWORD,
@@ -594,6 +597,7 @@ func MMeCluster(mmesByName, smfsByName map[string]generators.ComponentData) []MM
 	}
 	return mmeClusters
 }
+
 func SMfCluster(smfsByName map[string]generators.ComponentData) []SMFCluster {
 	var (
 		smfNames    []string
@@ -627,7 +631,7 @@ func SMfCluster(smfsByName map[string]generators.ComponentData) []SMFCluster {
 			}
 			cluster := SMFCluster{
 				Master: HOST{
-					ANSIBLE_HOST:   master.Networks["OAM"].IP,
+					ANSIBLEHost:    master.Networks["OAM"].IP,
 					ManagementPort: mme_managementPort,
 					User:           USER,
 					Password:       PASSWORD,
@@ -637,7 +641,7 @@ func SMfCluster(smfsByName map[string]generators.ComponentData) []SMFCluster {
 				},
 
 				Backup: HOST{
-					ANSIBLE_HOST:   backup.Networks["OAM"].IP,
+					ANSIBLEHost:    backup.Networks["OAM"].IP,
 					ManagementPort: mme_managementPort,
 					User:           USER,
 					Password:       PASSWORD,
@@ -674,6 +678,7 @@ func SMfCluster(smfsByName map[string]generators.ComponentData) []SMFCluster {
 	}
 	return smfClusters
 }
+
 func HSsCluster(hsssByName map[string]generators.ComponentData) []HSSCluster {
 	var (
 		hssNames    []string
@@ -707,7 +712,7 @@ func HSsCluster(hsssByName map[string]generators.ComponentData) []HSSCluster {
 			}
 			cluster := HSSCluster{
 				Master: HOST{
-					ANSIBLE_HOST:   master.Networks["OAM"].IP,
+					ANSIBLEHost:    master.Networks["OAM"].IP,
 					ManagementPort: mme_managementPort,
 					User:           USER,
 					Password:       PASSWORD,
@@ -717,7 +722,7 @@ func HSsCluster(hsssByName map[string]generators.ComponentData) []HSSCluster {
 				},
 
 				Backup: HOST{
-					ANSIBLE_HOST:   backup.Networks["OAM"].IP,
+					ANSIBLEHost:    backup.Networks["OAM"].IP,
 					ManagementPort: mme_managementPort,
 					User:           USER,
 					Password:       PASSWORD,
@@ -739,6 +744,7 @@ func HSsCluster(hsssByName map[string]generators.ComponentData) []HSSCluster {
 	}
 	return hssClusters
 }
+
 func PCRFsCluster(pcrfsByName map[string]generators.ComponentData) []PCRFCluster {
 	var (
 		pcrfNames    []string
@@ -771,7 +777,7 @@ func PCRFsCluster(pcrfsByName map[string]generators.ComponentData) []PCRFCluster
 			}
 			cluster := PCRFCluster{
 				Master: HOST{
-					ANSIBLE_HOST:   master.Networks["OAM"].IP,
+					ANSIBLEHost:    master.Networks["OAM"].IP,
 					ManagementPort: mme_managementPort,
 					User:           USER,
 					Password:       PASSWORD,
@@ -781,7 +787,7 @@ func PCRFsCluster(pcrfsByName map[string]generators.ComponentData) []PCRFCluster
 				},
 
 				Backup: HOST{
-					ANSIBLE_HOST:   backup.Networks["OAM"].IP,
+					ANSIBLEHost:    backup.Networks["OAM"].IP,
 					ManagementPort: mme_managementPort,
 					User:           USER,
 					Password:       PASSWORD,
@@ -803,8 +809,8 @@ func PCRFsCluster(pcrfsByName map[string]generators.ComponentData) []PCRFCluster
 	}
 	return pcrfClusters
 }
-func Data(mmesByName, hsssByName, sgwcsByName, sgwusByName, smfsByName, upfsByName, pcrfsByName map[string]generators.ComponentData) any {
 
+func Data(mmesByName, hsssByName, sgwcsByName, sgwusByName, smfsByName, upfsByName, pcrfsByName map[string]generators.ComponentData) any {
 	sgwcCluster := SgwcCluster(sgwcsByName)
 	mmeCluster := MMeCluster(mmesByName, smfsByName)
 	smfCluster := SMfCluster(smfsByName)

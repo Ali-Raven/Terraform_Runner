@@ -1,4 +1,4 @@
-package main
+package web
 
 import (
 	"fmt"
@@ -8,6 +8,7 @@ import (
 
 	"github.com/TwiN/go-color"
 	"github.com/common-nighthawk/go-figure"
+	"github.com/terraform_runner/helper"
 )
 
 func Webui(hostname string) {
@@ -16,7 +17,7 @@ func Webui(hostname string) {
 	fmt.Println(color.Cyan + "\nopening WebUi ..." + color.Reset)
 	time.Sleep(2 * time.Second)
 
-	currentPath, _ := CurrentDir()
+	currentPath, _ := helper.CurrentDir()
 
 	execPy := exec.Command("./run_app")
 	execPy.Dir = currentPath + "/webui/"

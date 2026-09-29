@@ -1,4 +1,4 @@
-package main
+package cyborg
 
 import (
 	"bufio"
@@ -43,7 +43,6 @@ func Cyborg(hostname, wdir string) {
 		time.Sleep(1 * time.Second)
 		Cyborg(hostname, wdir)
 	}
-
 }
 
 func Ansible_config(hostname, wdir string, reader *bufio.Reader) {
@@ -60,7 +59,7 @@ func Running_Ansible(hostname, wdir string, reader *bufio.Reader) {
 	fmt.Printf("\n%s%s listing Options ... %s%s", color.Bold, color.Yellow, color.Reset, color.Reset)
 	time.Sleep(1 * time.Second)
 	// getting current directory
-	currentDir, err := CurrentDir()
+	currentDir, err := helper.CurrentDir()
 	if err != nil {
 		panic(err)
 	}
@@ -86,7 +85,6 @@ func Running_Ansible(hostname, wdir string, reader *bufio.Reader) {
 
 	fmt.Println(color.Cyan + "Returning to main menu ..." + color.Cyan)
 	Cyborg(hostname, wdir)
-
 }
 
 func Install4GCore(wdir, currentDir string) {
@@ -148,18 +146,18 @@ func ConfigKeepAlived(wdir, currentDir string) {
 	time.Sleep(1 * time.Second)
 }
 
-// =============================================================================================== Helper functions ==============================================================================================
-func CurrentDir() (ـ string, err error) {
-	defer func() {
-		if err != nil {
-			err = fmt.Errorf("Error getting Currnet Dir : %w", err)
-		}
-	}()
-	currentDir, err := os.Getwd()
-	if err != nil {
-		return " ", err
-	}
-	return currentDir, nil
-}
-
+// // =============================================================================================== Helper functions ==============================================================================================
+// func CurrentDir() (ـ string, err error) {
+// 	defer func() {
+// 		if err != nil {
+// 			err = fmt.Errorf("Error getting Currnet Dir : %w", err)
+// 		}
+// 	}()
+// 	currentDir, err := os.Getwd()
+// 	if err != nil {
+// 		return " ", err
+// 	}
+// 	return currentDir, nil
+// }
+//
 // =============================================================================================== Helper functions (END) ==============================================================================================

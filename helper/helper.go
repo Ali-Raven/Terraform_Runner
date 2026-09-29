@@ -3,12 +3,29 @@ package helper
 import (
 	"bufio"
 	"fmt"
+	"os"
 	"strconv"
 	"strings"
 
 	"github.com/AlecAivazis/survey/v2"
 	"github.com/TwiN/go-color"
 )
+
+// ======================================================================= Getting CurrentDir ==========================================================
+func CurrentDir() (ـ string, err error) {
+	defer func() {
+		if err != nil {
+			err = fmt.Errorf("Error getting Currnet Dir : %w", err)
+		}
+	}()
+	currentDir, err := os.Getwd()
+	if err != nil {
+		return " ", err
+	}
+	return currentDir, nil
+}
+
+// ======================================================================= Getting CurrentDir ==========================================================
 
 // ========================================================================= ReadRequired ==================================================================
 func ReadRequired(reader *bufio.Reader, label string) string {
@@ -81,6 +98,7 @@ func Ask(label, iden string) string {
 
 	return iden
 }
+
 func AskThHasDefaultVal(label, iden, defaultVal string) string {
 	prompt := survey.Input{
 		Message: label,
@@ -97,6 +115,7 @@ func AskThHasDefaultVal(label, iden, defaultVal string) string {
 
 	return iden
 }
+
 func AskThHasDefaultValInt(label string, iden int, defaultVal int) int {
 	prompt := survey.Input{
 		Message: label,
@@ -113,6 +132,7 @@ func AskThHasDefaultValInt(label string, iden int, defaultVal int) int {
 
 	return iden
 }
+
 func AskPassword(label, iden string) string {
 	prompt := survey.Password{
 		Message: label,

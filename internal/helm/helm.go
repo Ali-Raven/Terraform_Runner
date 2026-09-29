@@ -1,4 +1,4 @@
-package main
+package helm
 
 import (
 	"bufio"
@@ -19,7 +19,7 @@ import (
 	"github.com/TwiN/go-color"
 	"github.com/common-nighthawk/go-figure"
 	"github.com/terraform_runner/helper"
-	"github.com/terraform_runner/servers"
+	"github.com/terraform_runner/internal/servers"
 )
 
 // initializing global variables
@@ -211,7 +211,7 @@ func ServeViaHttp(hostname, wdir string, reader *bufio.Reader) {
 	// get local IP
 	localIP, _ := GetLocalIP()
 
-	currentDir, _ := CurrentDir()
+	currentDir, _ := helper.CurrentDir()
 
 	isoPath := currentDir + wdir + "/iso_files/"
 
@@ -283,14 +283,13 @@ func GettingServerInfoToBegin(wdir, currentDir, model, hostname, iso_path, isoUR
 	time.Sleep(1 * time.Second)
 
 	// getting baremetal server information
-	serverAddress = readRequired(reader, "\nEnter Address of Server : ")
-	serverUser = readRequired(reader, "\nEnter Username of Server : ")
-	serverPassword = readRequired(reader, "\nEnter Password to login : ")
+	serverAddress = helper.ReadRequired(reader, "\nEnter Address of Server : ")
+	serverUser = helper.ReadRequired(reader, "\nEnter Username of Server : ")
+	serverPassword = helper.ReadRequired(reader, "\nEnter Password to login : ")
 
 	fmt.Println(color.Yellow + "generating vars file (yaml) ..." + color.Reset)
 	time.Sleep(2 * time.Second)
 	ServerVarsYmlInfo(serverAddress, serverUser, serverPassword, isoURL, wdir, currentDir)
-
 }
 
 func ServerVarsYmlInfo(serverAddress, serverUser, serverPassword, serverUrlIso, wdir, currenDir string) {
@@ -322,7 +321,7 @@ server_iso_url: "{{ .ServerURL }}"`
 
 	fullPath := currenDir + "/bareMetal-ansible-exsi/roles/copy-install-from-image/vars/"
 	filename := "main.yml"
-	os.WriteFile(fullPath+filename, buf.Bytes(), 0644)
+	os.WriteFile(fullPath+filename, buf.Bytes(), 0o644)
 	fmt.Printf("\n%sGenerating %s  file ...%s", color.Yellow, filename, color.Reset)
 	time.Sleep(2 * time.Second)
 	fmt.Printf("\n%s%s generated in the path %s%s\n\n", color.Green, filename, fullPath, color.Reset)
@@ -333,7 +332,7 @@ server_iso_url: "{{ .ServerURL }}"`
 // ==================================================================================== Ansible injection (ESXI)  ==========================================================================================
 
 func MinimalInputEsxi(reader *bufio.Reader, wdir, hostname string) {
-	currentDir, _ := CurrentDir()
+	currentDir, _ := helper.CurrentDir()
 
 	figure.NewColorFigure("vCenter Setup", "", "green", true).Print()
 	fmt.Println(color.Blue + "\nUsing vCenter_setup" + color.Reset)
@@ -369,7 +368,6 @@ func MinimalInputEsxi(reader *bufio.Reader, wdir, hostname string) {
 
 // ==================================================================================== vCenter setup ==========================================================================================
 func Vcenter_setup(wdir, currentDir, hostname string, reader *bufio.Reader) {
-
 	fmt.Println(color.Yellow + "Setting up vCenter Product ..." + color.Reset)
 	fmt.Println()
 	time.Sleep(1 * time.Second)
@@ -471,7 +469,7 @@ func Vcenter_setup(wdir, currentDir, hostname string, reader *bufio.Reader) {
 		panic(err)
 	}
 
-	err = os.WriteFile("production-vcsa.json", jsonBytes, 0644)
+	err = os.WriteFile("production-vcsa.json", jsonBytes, 0o644)
 	if err != nil {
 		panic(err)
 	}
@@ -488,7 +486,6 @@ func Vcenter_setup(wdir, currentDir, hostname string, reader *bufio.Reader) {
 }
 
 func Installing_vCenter(wdir, hostname string) {
-
 	currentDir, _ := os.Getwd()
 	jsonPath := currentDir + "/production-vcsa.json"
 
@@ -519,7 +516,7 @@ func CreateClusterAndDataStoreOnVcneter(wdir, hostname string) {
 	fmt.Println(color.Yellow + "Creating Cluster and Datastore on vCenter with Ansible ..." + color.Reset)
 	time.Sleep(2 * time.Second)
 
-	currentPath, _ := CurrentDir()
+	currentPath, _ := helper.CurrentDir()
 	fullPath := currentPath + "ansible/ansible-vmware-config"
 
 	fmt.Printf("%sGenerating vars.yml on path %s %s", color.Yellow, fullPath+"/roles/create-cluster-and-datastore-on-vCenter/vars/main.yml", color.Reset)
@@ -546,7 +543,8 @@ func GenerateYmlClusterAndDatasotre(path, usrvCenterIp, usrvCenterUsername, vCen
 		EsxiIp               string
 		EsxiUsername         string
 		EsxiPassword         string
-	}{usrvCenterIp,
+	}{
+		usrvCenterIp,
 		usrvCenterUsername,
 		vCenter_login_pass,
 		usrIP,
@@ -576,7 +574,7 @@ esxi_password: "{{ .EsxiPassword }}"`
 
 	fmt.Printf("%sWriting file into %s%s\n", color.Yellow, path, color.Reset)
 
-	os.WriteFile(path+"/roles/create-cluster-and-datastore-on-vCenter/vars/main.yml", buf.Bytes(), 0644)
+	os.WriteFile(path+"/roles/create-cluster-and-datastore-on-vCenter/vars/main.yml", buf.Bytes(), 0o644)
 
 	time.Sleep(1 * time.Second)
 	fmt.Printf("%sSuccessfully writed on %s .%s\n", color.Green, path, color.Reset)

@@ -1,4 +1,4 @@
-package main
+package nozaros
 
 import (
 	"bufio"
@@ -16,8 +16,11 @@ import (
 	"github.com/TwiN/go-color"
 	"github.com/joho/godotenv"
 	"github.com/ncruces/zenity"
-	api "github.com/terraform_runner/apis"
 	"github.com/terraform_runner/helper"
+	api "github.com/terraform_runner/internal/apis"
+	"github.com/terraform_runner/internal/compmapper"
+	typesstructs "github.com/terraform_runner/internal/typesStructs"
+	"github.com/terraform_runner/internal/vmstore"
 )
 
 var (
@@ -28,7 +31,7 @@ var (
 	ManagementNetworkName     string
 	ManagementNetworkIP       string
 	ManagementNetworkNetmask  string
-	vms                       []VM
+	vms                       []typesstructs.VM
 	VmName                    string
 	VmTargetHost              string
 	DataStore                 string
@@ -63,34 +66,7 @@ var (
 	PCRFConnectedComps []string = []string{"SMF1", "SMF2"}
 )
 
-type Network struct {
-	ID      string `json:"uuid"`
-	Name    string `json:"name"`
-	IP      string `json:"ip"`
-	Gateway string `json:"gateway"`
-	Netmask int    `json:"netmask"`
-}
-
-type VM struct {
-	ID         string `json:"uuid"`
-	Name       string `json:"name"`
-	TargetHost string `json:"target_host"`
-	DataStore  string `json:"datastore"`
-	// ClusterName         string    `json:"cluster_name"`
-	NumCPU              int       `json:"num_cpus"`
-	MemoryGB            int       `json:"memory_gb"`
-	Gateway             string    `json:"gateway"`
-	DNSservers          []string  `json:"dns_servers"`
-	Component           string    `json:"component"`
-	ComponentsToConnect []string  `json:"componentsToConnect"`
-	Networks            []Network `json:"network_adaptors"`
-}
-
-type TFvars struct {
-	VMs []VM `json:"vms"`
-}
-
-func Nozaros_configure(wdir, hostname string) {
+func NozarosConfigure(wdir, hostname string) {
 	reader := bufio.NewReader(os.Stdin)
 
 	// getting vCenter server info
@@ -105,6 +81,7 @@ func Nozaros_configure(wdir, hostname string) {
 	fmt.Println()
 	fmt.Println(color.Yellow + "\n================" + color.Reset)
 	fmt.Println(color.Yellow + "\nOptions : \n" + color.Reset)
+
 	var choice []string
 	choice = []string{"create new VMs", "Modify existing VMs", "Delete VMs", "Generating Inventory.yml file", "Test enviroment", "Deploy OVF template", "Main menu", "Exit"}
 	optionStr := helper.AskSelect(choice)
@@ -117,9 +94,9 @@ func Nozaros_configure(wdir, hostname string) {
 	case "Delete VMs":
 		DeleteVMs(reader, wdir, hostname)
 	case "Generating Inventory.yml file":
-		YmlCompMapper(wdir, vms)
+		compmapper.YmlCompMapper(wdir, vms)
 		time.Sleep(1 * time.Second)
-		Nozaros_configure(wdir, hostname)
+		NozarosConfigure(wdir, hostname)
 	case "Test enviroment":
 		err := godotenv.Load()
 		if err != nil {
@@ -136,8 +113,8 @@ func Nozaros_configure(wdir, hostname string) {
 	case "Main menu":
 		fmt.Println(color.Yellow + "\nReturning to main menu..." + color.Reset)
 		time.Sleep(1 * time.Second)
-		MainStage(wdir, hostname, 2)
-		Nozaros_configure(wdir, hostname)
+		//stage.MainStage(wdir, hostname, 2)
+		return
 	case "Exit":
 		fmt.Println("Exiting...")
 		time.Sleep(1 * time.Second)
@@ -146,11 +123,11 @@ func Nozaros_configure(wdir, hostname string) {
 		fmt.Println(color.Yellow + "\nWarning : choose one of the above options ..." + color.Reset)
 		fmt.Println(color.Yellow + "Returning to menu ..." + color.Reset)
 		time.Sleep(1 * time.Second)
-		Nozaros_configure(wdir, hostname)
+		NozarosConfigure(wdir, hostname)
 	}
 	time.Sleep(1 * time.Second)
 	fmt.Printf("%s%s Updated Successfully. %s\n", color.Green, "terraform.tfvars.json", color.Reset)
-	Nozaros_configure(wdir, hostname)
+	NozarosConfigure(wdir, hostname)
 }
 
 // =========================================================================== Creating New VMs ==========================================================================
@@ -166,10 +143,10 @@ func createNewVMs(reader *bufio.Reader, wdir, hostname string) {
 			fmt.Println(color.Red + "Enter Numbers Please." + color.Reset)
 			fmt.Println("\nReturning to menu ....")
 			time.Sleep(1 * time.Second)
-			Nozaros_configure(wdir, hostname)
+			NozarosConfigure(wdir, hostname)
 		}
 
-		vms, errVM := loadExistingVMs(wdir)
+		vms, errVM := LoadExistingVMs(wdir)
 		if errVM != nil {
 			panic(errVM)
 		}
@@ -207,16 +184,17 @@ func HashGenerator(name string) string {
 	return hex.EncodeToString(hash[:])[:12]
 }
 
-func loadExistingVMs(wdir string) ([]VM, error) {
-	tfvars, err := loadTFvars(wdir)
+func LoadExistingVMs(wdir string) ([]typesstructs.VM, error) {
+	tfvars, err := vmstore.LoadTFvars(wdir)
 	if err != nil {
 		fmt.Println(color.Yellow + "No existing VMs found. Starting fresh..." + color.Reset)
-		return []VM{}, err
+		return []typesstructs.VM{}, err
 	}
 	return tfvars.VMs, nil
 }
-func preview(vms []VM, reader *bufio.Reader, wdir, hostname string) int {
-	data := TFvars{VMs: vms}
+
+func preview(vms []typesstructs.VM, reader *bufio.Reader, wdir, hostname string) int {
+	data := typesstructs.TFvars{VMs: vms}
 	jsonBytes, _ := json.MarshalIndent(data, "", "  ")
 
 	fmt.Println(color.Green + "\n============ PREVIEW ============" + color.Reset)
@@ -230,7 +208,7 @@ func preview(vms []VM, reader *bufio.Reader, wdir, hostname string) int {
 		// Save the updated VMs to the file in the working directory
 		currentDir, _ := os.Getwd()
 		filename := currentDir + wdir + "/terraform.tfvars.json"
-		os.WriteFile(filename, jsonBytes, 0644)
+		os.WriteFile(filename, jsonBytes, 0o644)
 		// Yml(currentDir)
 		return 0
 	case "2":
@@ -248,10 +226,12 @@ func preview(vms []VM, reader *bufio.Reader, wdir, hostname string) int {
 		fmt.Println(color.Red + "Canceled ❌" + color.Reset)
 		fmt.Println("returning to the main menu ...")
 		time.Sleep(2 * time.Second)
-		main()
+		return 0
+
 	}
 	return 0
 }
+
 func confirmMenu(reader *bufio.Reader) string {
 	for {
 		fmt.Println("\nOptions:")
@@ -301,6 +281,7 @@ func ComponentsToConnectValidations(componentsToConnect, targets []string) (bool
 	}
 	return true, nil
 }
+
 func isVMNameIsCoreComponent(CompsConnectedItems, targets []string, wdir, hostname string) {
 	componentsToConnect = helper.MultiSelect("which Components you want to Connect ?", CompsConnectedItems)
 
@@ -331,8 +312,7 @@ func isVMNameIsCoreComponent(CompsConnectedItems, targets []string, wdir, hostna
 	}
 }
 
-func collectVM(reader *bufio.Reader, ds []string, wdir, hostname string) []VM {
-
+func collectVM(reader *bufio.Reader, ds []string, wdir, hostname string) []typesstructs.VM {
 	VmName = helper.Ask("Enter VM Name:", VmName)
 	VmTargetHost = helper.Ask("Enter Target Host of VM :", VmTargetHost)
 	DataStore = helper.AskSelect(ds)
@@ -372,7 +352,7 @@ func collectVM(reader *bufio.Reader, ds []string, wdir, hostname string) []VM {
 		splitDnsStr[i] = strings.TrimSpace(splitDnsStr[i])
 	}
 
-	vm := VM{
+	vm := typesstructs.VM{
 		ID:         genHash,
 		Name:       strings.TrimSpace(VmName),
 		TargetHost: strings.TrimSpace(VmTargetHost),
@@ -400,7 +380,7 @@ func collectVM(reader *bufio.Reader, ds []string, wdir, hostname string) []VM {
 	// ManagementNetworkName, _ = reader.ReadString('\n')
 	// ManagementNetworkName = strings.TrimSpace(ManagementNetworkName)
 	// fmt.Println("--------")
-	vm.Networks = append(vm.Networks, Network{
+	vm.Networks = append(vm.Networks, typesstructs.Network{
 		ID:      GenHashNetwork,
 		Name:    strings.TrimSpace(ManagementNetworkName),
 		IP:      strings.TrimSpace(ManagementNetworkIP),
@@ -435,12 +415,11 @@ func collectVM(reader *bufio.Reader, ds []string, wdir, hostname string) []VM {
 		&additionalNetChoice,
 		survey.WithValidator(Validator),
 	)
-
 	if err != nil {
 		panic(err)
 	}
 
-	vmList := []VM{vm}
+	vmList := []typesstructs.VM{vm}
 
 	if backupComps == "y" && vipForBackupComps != "" {
 		backupVM := createBackupVM(vm, vipForBackupComps, BackupTargetHost, BackupDataStore)
@@ -451,9 +430,8 @@ func collectVM(reader *bufio.Reader, ds []string, wdir, hostname string) []VM {
 	return vmList
 }
 
-func createBackupVM(originalVM VM, vIP, bTarget, bDataStore string) VM {
-
-	backup := VM{
+func createBackupVM(originalVM typesstructs.VM, vIP, bTarget, bDataStore string) typesstructs.VM {
+	backup := typesstructs.VM{
 		ID:         HashGenerator(originalVM.Name + "-backup"),
 		Name:       originalVM.Name + "-backup",
 		TargetHost: bTarget,
@@ -482,8 +460,8 @@ func createBackupVM(originalVM VM, vIP, bTarget, bDataStore string) VM {
 	return backup
 }
 
-func readAdditionalNetworks() []Network {
-	var vmNetworks []Network
+func readAdditionalNetworks() []typesstructs.Network {
+	var vmNetworks []typesstructs.Network
 	fmt.Println(color.Bold + "\n\nadding additional networks ...\n" + color.Reset)
 	time.Sleep(1 * time.Second)
 	// fmt.Print(color.Yellow + "How many Networks do you want for your VMs ? " + color.Reset)
@@ -502,7 +480,7 @@ func readAdditionalNetworks() []Network {
 
 		GenHashAdditionNetwork := HashGenerator(additionalNetwork_name)
 		// Yml(additionalNetwork_ip)
-		vmNetworks = append(vmNetworks, Network{
+		vmNetworks = append(vmNetworks, typesstructs.Network{
 			ID:      GenHashAdditionNetwork,
 			Name:    strings.TrimSpace(additionalNetwork_name),
 			IP:      strings.TrimSpace(additionalNetwork_ip),
@@ -521,7 +499,7 @@ func ModifyVMs(reader *bufio.Reader, wdir, hostname string) {
 	time.Sleep(1 * time.Second)
 	// loadExistingVMs(wdir)
 
-	tfvars, err := loadTFvars(wdir)
+	tfvars, err := vmstore.LoadTFvars(wdir)
 	if err != nil {
 		fmt.Println(color.Red + "Failed to load terraform.tfvars.json file" + color.Reset)
 		return
@@ -549,7 +527,7 @@ func ModifyVMs(reader *bufio.Reader, wdir, hostname string) {
 	} else if vmID == "0" {
 		fmt.Println(color.Yellow + "\nReturning to menu ..." + color.Reset)
 		time.Sleep(1 * time.Second)
-		Nozaros_configure(wdir, hostname)
+		NozarosConfigure(wdir, hostname)
 	}
 	// Further implementation to modify the VM with the given name
 	fmt.Printf("Modifying VM:%s%s %s %s%s\n", color.Bold, color.Yellow, vmID, color.Reset, color.Reset)
@@ -563,7 +541,7 @@ func ModifyVMs(reader *bufio.Reader, wdir, hostname string) {
 	ModifyVMs(reader, wdir, hostname)
 }
 
-func editVMs(reader *bufio.Reader, vm VM, wdir string) VM {
+func editVMs(reader *bufio.Reader, vm typesstructs.VM, wdir string) typesstructs.VM {
 	fmt.Println(color.Yellow + "\nPress ENTER to keep current value" + color.Reset)
 
 	vm.Name = readOptionalValue(reader, "VM Name : ", vm.Name)
@@ -580,7 +558,8 @@ func editVMs(reader *bufio.Reader, vm VM, wdir string) VM {
 
 	return vm
 }
-func readNetworks(reader *bufio.Reader, network []Network, wdir string) []Network {
+
+func readNetworks(reader *bufio.Reader, network []typesstructs.Network, wdir string) []typesstructs.Network {
 	// condition for checking the length of network array
 	fmt.Println("\nNetwork Options : \n1. Modify Existing Networks value\n2. Add Network to the List\n3. Delete Network\n4. Update and Exit")
 
@@ -653,6 +632,7 @@ func readOptionalValue(reader *bufio.Reader, label, current string) string {
 	}
 	return userInput
 }
+
 func readOptionalINT(reader *bufio.Reader, label string, current int) int {
 	fmt.Printf("%s%s [current value => %d]: %s", color.Bold, label, current, color.Reset)
 	userInput, _ := reader.ReadString('\n')
@@ -663,6 +643,7 @@ func readOptionalINT(reader *bufio.Reader, label string, current int) int {
 	}
 	return helper.Atoi(userInput)
 }
+
 func readDNSserversValue(reader *bufio.Reader, label string, current []string) []string {
 	fmt.Printf("%s%s [current value => %s]: %s", color.Bold, label, current, color.Reset)
 	userInput, _ := reader.ReadString('\n')
@@ -680,31 +661,32 @@ func readDNSserversValue(reader *bufio.Reader, label string, current []string) [
 	return dns
 }
 
-func saveNewTFvars(tfvars TFvars, wdir string) {
+func saveNewTFvars(tfvars typesstructs.TFvars, wdir string) {
 	data, _ := json.MarshalIndent(tfvars, "", " ")
 
 	currentDir, _ := os.Getwd()
 	filename := currentDir + wdir + "/terraform.tfvars.json"
-	os.WriteFile(filename, data, 0644)
+	os.WriteFile(filename, data, 0o644)
 }
 
-func loadTFvars(wdir string) (TFvars, error) {
-	currentDir, _ := os.Getwd()
-	filename := currentDir + wdir + "/terraform.tfvars.json"
-	data, err := os.ReadFile(filename)
-	if err != nil {
-		return TFvars{}, err
-	}
+// func loadTFvars(wdir string) (typesstructs.TFvars, error) {
+// 	currentDir, _ := os.Getwd()
+// 	filename := currentDir + wdir + "/terraform.tfvars.json"
+// 	data, err := os.ReadFile(filename)
+// 	if err != nil {
+// 		return typesstructs.TFvars{}, err
+// 	}
+//
+// 	var tfvars typesstructs.TFvars
+// 	err = json.Unmarshal(data, &tfvars)
+// 	if err != nil {
+// 		fmt.Println(color.Red+"Error unmarshaling JSON:"+color.Reset, err)
+// 		return tfvars, err
+// 	}
+// 	return tfvars, err
+// }
 
-	var tfvars TFvars
-	err = json.Unmarshal(data, &tfvars)
-	if err != nil {
-		fmt.Println(color.Red+"Error unmarshaling JSON:"+color.Reset, err)
-		return tfvars, err
-	}
-	return tfvars, err
-}
-func GettingVMsLists(tfvars TFvars) {
+func GettingVMsLists(tfvars typesstructs.TFvars) {
 	for i, vm := range tfvars.VMs {
 		printVMBox(vm, i)
 		fmt.Println(color.Green + "================================================" + color.Reset)
@@ -718,7 +700,7 @@ func truncate(s string, max int) string {
 	return fmt.Sprintf("%-*s", max, s)
 }
 
-func printVMBox(vm VM, index int) {
+func printVMBox(vm typesstructs.VM, index int) {
 	// Total width: 52 chars. Inner width: 50 chars.
 	fmt.Println("┌──────────────────────────────────────────────────┐")
 
@@ -761,7 +743,7 @@ func printVMBox(vm VM, index int) {
 func DeleteVMs(reader *bufio.Reader, wdir, hostname string) {
 	fmt.Println(color.Yellow + "\nDelete VMs" + color.Reset)
 	time.Sleep(2 * time.Second)
-	tfvars, err := loadTFvars(wdir)
+	tfvars, err := vmstore.LoadTFvars(wdir)
 	if err != nil {
 		fmt.Println(color.Red + "Failed to load terraform.tfvars.json file" + color.Reset)
 		return
@@ -789,7 +771,7 @@ func DeleteVMs(reader *bufio.Reader, wdir, hostname string) {
 	} else if vmID == "0" {
 		fmt.Println(color.Yellow + "\nReturning to menu ..." + color.Reset)
 		time.Sleep(1 * time.Second)
-		Nozaros_configure(wdir, hostname)
+		NozarosConfigure(wdir, hostname)
 	}
 
 	fmt.Printf("Deleting VM ==> %s%s%s\n", color.Cyan, vmID, color.Reset)
@@ -816,7 +798,6 @@ func OpenningFileExplorer(hostname, wdir string) {
 			Patterns: []string{"*.ovf"},
 		},
 	)
-
 	// Handle user cancellation or dialog errors
 	if err != nil {
 		if err == zenity.ErrCanceled {
@@ -835,13 +816,13 @@ func OpenningFileExplorer(hostname, wdir string) {
 
 	// asking vm name from user
 	vmName = helper.Ask("Enter VM Name : ", vmName)
-	diskProvisionType := helper.AskSelect([]string{"thin" , "thick" , "eager"})
+	diskProvisionType := helper.AskSelect([]string{"thin", "thick", "eager"})
 	fmt.Println(color.Yellow + "\nPress ENTER to start deploying to vCenter..." + color.Reset)
 	var input string
 	fmt.Scanln(&input)
 
 	// Proceed with your govmomi vCenter deployment using ovfPath
-	api.DeployOvfTemplateOnVcenter(hostname, wdir, ovfPath, vmName , diskProvisionType)
+	api.DeployOvfTemplateOnVcenter(hostname, wdir, ovfPath, vmName, diskProvisionType)
 }
 
 // =========================================================================== Deploy OVF template (END) ==========================================================================

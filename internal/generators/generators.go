@@ -1,3 +1,4 @@
+// Package generators is for generate Map of All 4G components
 package generators
 
 type ComponentData struct {
@@ -42,6 +43,7 @@ func BuildAllHSSs(componentData map[string]ComponentData) map[string]ComponentDa
 	}
 	return hsssByName
 }
+
 func BuildAllSGWCs(componentData map[string]ComponentData) map[string]ComponentData {
 	sgwcsByName := make(map[string]ComponentData)
 
@@ -55,6 +57,7 @@ func BuildAllSGWCs(componentData map[string]ComponentData) map[string]ComponentD
 	}
 	return sgwcsByName
 }
+
 func BuildAllSGWUs(componentData map[string]ComponentData) map[string]ComponentData {
 	sgwusByName := make(map[string]ComponentData)
 
@@ -68,6 +71,7 @@ func BuildAllSGWUs(componentData map[string]ComponentData) map[string]ComponentD
 	}
 	return sgwusByName
 }
+
 func BuildAllSMFs(componentData map[string]ComponentData) map[string]ComponentData {
 	smfsByName := make(map[string]ComponentData)
 
@@ -81,6 +85,7 @@ func BuildAllSMFs(componentData map[string]ComponentData) map[string]ComponentDa
 	}
 	return smfsByName
 }
+
 func BuildAllUPFs(componentData map[string]ComponentData) map[string]ComponentData {
 	upfsByName := make(map[string]ComponentData)
 
@@ -94,6 +99,7 @@ func BuildAllUPFs(componentData map[string]ComponentData) map[string]ComponentDa
 	}
 	return upfsByName
 }
+
 func BuildAllPCRFs(componentData map[string]ComponentData) map[string]ComponentData {
 	pcrfsByName := make(map[string]ComponentData)
 

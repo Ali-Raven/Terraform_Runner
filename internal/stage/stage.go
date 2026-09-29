@@ -1,4 +1,4 @@
-package main
+package stage
 
 import (
 	"bufio"
@@ -10,6 +10,8 @@ import (
 
 	"github.com/TwiN/go-color"
 	"github.com/common-nighthawk/go-figure"
+	"github.com/terraform_runner/internal/nozaros"
+	"github.com/terraform_runner/internal/oranos"
 )
 
 func Oranos(hostname, wdir string) {
@@ -41,9 +43,11 @@ func MainStage(wdir, hostname string, componentID int8) {
 	case "1":
 		switch componentID {
 		case 1:
-			Oranos_configure(wdir, hostname)
+			oranos.OranosConfigure(wdir, hostname)
+			MainStage(wdir, hostname, componentID)
 		case 2:
-			Nozaros_configure(wdir, hostname)
+			nozaros.NozarosConfigure(wdir, hostname)
+			MainStage(wdir, hostname, componentID)
 		}
 		return
 	case "2":
@@ -87,12 +91,14 @@ func terraform_plan(mode *string, wdir, hostname string, componentID int8) {
 
 	MainStage(wdir, hostname, componentID)
 }
+
 func terraform_apply(mode *string, wdir, hostname string, componentID int8) {
 	*mode = "apply"
 	baseCommand("terraform", "apply", "--auto-approve", wdir, mode)
 	// main()
 	MainStage(wdir, hostname, componentID)
 }
+
 func terraform_destroy(mode *string, wdir, hostname string, componentID int8) {
 	*mode = "destroy"
 	baseCommand("terraform", "destroy", "--auto-approve", wdir, mode)
