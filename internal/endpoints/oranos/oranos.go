@@ -21,6 +21,7 @@ func OranosConfigure(wdir, hostname string) {
 	}
 	filename := currentDir + wdir + "/terraform.tfvars"
 	content, _ := os.ReadFile(filename)
+
 	text := string(content)
 
 	vlans := getVlans(text)

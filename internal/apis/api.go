@@ -1,3 +1,4 @@
+// Package apis established for using govmomi package to do some work like getting datasotre name and upload something on cloud vCneter or....
 package apis
 
 import (
@@ -37,7 +38,7 @@ func (pr *ProgressReader) Read(p []byte) (int, error) {
 	return n, err
 }
 
-// this function is for validating the selected OVF file and its associated files in the same directory
+// ValidateOvfDirectory this function is for validating the selected OVF file and its associated files in the same directory
 func ValidateOvfDirectory(ovfPath string) error {
 	fileInfo, err := os.Stat(ovfPath)
 	if err != nil {
@@ -101,7 +102,7 @@ func GetAllDatastoreName(vcURL, username, pass string) ([]string, error) {
 	return dsNames, nil
 }
 
-func DeployOvfTemplateOnVcenter(hostname, wdir, ovfFilePath, vmName , diskProvisionType string) {
+func DeployOvfTemplateOnVcenter(hostname, wdir, ovfFilePath, vmName, diskProvisionType string) {
 	fmt.Printf("\n%s%sDeploying VMs section ...%s%s\n", color.Bold, color.Yellow, color.Reset, color.Reset)
 	time.Sleep(1 * time.Second)
 
@@ -117,7 +118,6 @@ func DeployOvfTemplateOnVcenter(hostname, wdir, ovfFilePath, vmName , diskProvis
 	targetHost := os.Getenv("targetHost")
 
 	u, err := url.Parse(fmt.Sprintf("https://%s:%s@%s/sdk", vCenterUserName, vCenterPass, vCenterURL))
-
 	if err != nil {
 		log.Panicf("%sinvalid vCenter URL: %v%s", color.Red, err, color.Reset)
 	}
@@ -206,7 +206,7 @@ func DeployOvfTemplateOnVcenter(hostname, wdir, ovfFilePath, vmName , diskProvis
 
 	// Build Import Spec
 	crd := types.OvfCreateImportSpecParams{
-		EntityName: vmName,
+		EntityName:       vmName,
 		DiskProvisioning: diskProvisionType,
 	}
 
@@ -242,7 +242,6 @@ func DeployOvfTemplateOnVcenter(hostname, wdir, ovfFilePath, vmName , diskProvis
 	updater := lease.StartUpdater(ctx, info)
 	defer updater.Done()
 
-
 	// fmt.Println(info.Items)
 	// time.Sleep(10000 * time.Second)
 	// Loop through the items (disks/files) the lease expects and upload them
@@ -276,7 +275,6 @@ func DeployOvfTemplateOnVcenter(hostname, wdir, ovfFilePath, vmName , diskProvis
 		file.Close()
 	}
 
-	
 	// Complete the lease setup
 	if err := lease.Complete(ctx); err != nil {
 		log.Fatalf("Failed to complete lease: %v", err)

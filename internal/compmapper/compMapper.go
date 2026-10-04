@@ -4,6 +4,7 @@ package compmapper
 import (
 	"bytes"
 	"fmt"
+	"log"
 	"os"
 	"strings"
 	"text/template"
@@ -28,12 +29,12 @@ type ComponentMapper struct {
 	CompsMapPCRF DataComp
 }
 
-// this function generates the network mapping for a given component (e.g., MME, HSS, etc.) based on the provided VM list.
-func NetworkGeneratorComps(CompsName string, VmList map[string]typesstructs.VM) DataComp {
+// NetworkGeneratorComps function generates the network mapping for a given component (e.g., MME, HSS, etc.) based on the provided VM list.
+func NetworkGeneratorComps(CompsName string, VMList map[string]typesstructs.VM) DataComp {
 	CompsNetworksMaps := make(map[string]map[string]generators.NetworksStructure)
 	result := make(DataComp)
 
-	for vmName, vm := range VmList {
+	for vmName, vm := range VMList {
 
 		// only take VMs that belong to this component (MME, HSS, etc.)
 		if !strings.Contains(vmName, CompsName) {
@@ -103,14 +104,6 @@ func YmlCompMapper(wdir string, vms []typesstructs.VM) {
 		CompsMapPCRF: NetworkGeneratorComps("PCRF", VMList),
 	}
 
-	// CompsMapsMME := NetworkGeneratorComps("MME", VmList)
-	// CompsMapsHSS := NetworkGeneratorComps("HSS", VmList)
-	// CompsMapSGWC := NetworkGeneratorComps("SGWC", VmList)
-	// CompsMapSGWU := NetworkGeneratorComps("SGWU", VmList)
-	// CompsMapSMF := NetworkGeneratorComps("SMF", VmList)
-	// CompsMapUPF := NetworkGeneratorComps("UPF", VmList)
-	// CompsMapPCRF := NetworkGeneratorComps("PCRF", VmList)
-
 	mmesByName := generators.BuildAllMMEs(MapperComp.CompsMapsMME)
 	hsssByName := generators.BuildAllHSSs(MapperComp.CompsMapsHSS)
 	sgwcsByName := generators.BuildAllSGWCs(MapperComp.CompsMapSGWC)
@@ -118,26 +111,6 @@ func YmlCompMapper(wdir string, vms []typesstructs.VM) {
 	smfsByName := generators.BuildAllSMFs(MapperComp.CompsMapSMF)
 	upfsByName := generators.BuildAllUPFs(MapperComp.CompsMapUPF)
 	pcrfsByName := generators.BuildAllPCRFs(MapperComp.CompsMapPCRF)
-
-	// checking version of the core
-	Core_Name = "{{ core_name }}"
-	if V == "" {
-		Core_name_v = Core_Name
-	} else {
-		Core_name_v = Core_Name + "-" + V
-	}
-	Var_path = "/var/log/{{ core_name }}"
-	Tls_path = "/etc/{{ core_name }}/tls/"
-	Config_path = "/etc/{{ core_name }}"
-	Bin_path = "/usr/bin"
-	Core_source_path = "/opt/{{ core_name_version }}"
-	Inventory_hostname = "{{ inventory_hostname }}"
-	Diam_groupNames = "{{ group_names[1] }}"
-	Non_diam_groupNames = "{{ group_names[0] }}"
-	Var_path_diameter = "/etc/{{ core_name }}/freeDiameter/"
-	Diam_Realm = "epc.mnc{{ plmn.mnc }}.mcc{{ plmn.mcc }}.3gppnetwork.org"
-	Var_path_Comps = "/var/log/{{ core_name }}/{{ group_names[0] }}.log"
-	Hardcoded_Diam_Realm = "{{ diam_realm }}"
 
 	givenDataTemplate := Data(mmesByName, hsssByName, sgwcsByName, sgwusByName, smfsByName, upfsByName, pcrfsByName)
 
@@ -160,9 +133,12 @@ func YmlCompMapper(wdir string, vms []typesstructs.VM) {
 		panic(err)
 	}
 
-	inventoryPath, fileName := "ansible/ansible-core-deploy/inventory/", "main.yml"
+	inventoryPath, fileName := "ansible/ansible-core-deploy/inventory/", "maintest.yml"
 	// fileName := "demo.yml"
-	os.WriteFile(inventoryPath+fileName, buf.Bytes(), 0o644)
+	errOSwritefile := os.WriteFile(inventoryPath+fileName, buf.Bytes(), 0o644)
+	if errOSwritefile != nil {
+		log.Fatal(err)
+	}
 	// os.WriteFile(fileName, buf.Bytes(), 0644)
 	fmt.Printf("\n%sGenerating %s  file ...%s", color.Yellow, fileName, color.Reset)
 	time.Sleep(1 * time.Second)

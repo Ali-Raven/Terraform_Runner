@@ -1,21 +1,22 @@
+// Package template presenting the yaml template for ansible (structure)
 package template
 
 var yamlData string
 
-// this function returns the YAML template as a string. It is used to generate the Ansible inventory file based on the provided data.
+// TemplateYML function returns the YAML template as a string. It is used to generate the Ansible inventory file based on the provided data.
 func TemplateYML() string {
 	yamlData = `all:
   vars:
     core_name: "bbdh"
     version: "{{ .V }}"
-    db_uri: mongodb://localhost/{{ .Core_Name }}
-    configs_path: {{ .Config_path }}
-    core_name_version: "{{ .Core_name_v }}"
-    core_source_path: {{ .Core_source_path }}
-    binaries_path: {{ .Bin_path }}
-    var_path: {{ .Var_path }}
-    var_path_diameter: {{ .Var_path_diameter }}
-    tls_path: {{ .Tls_path }}
+    db_uri: mongodb://localhost/{{ .CoreName }}
+    configs_path: {{ .ConfigPath }}
+    core_name_version: "{{ .CoreNameV }}"
+    core_source_path: {{ .CoreSourcePath }}
+    binaries_path: {{ .BinPath }}
+    var_path: {{ .VarPath }}
+    var_path_diameter: {{ .VarPathDiameter }}
+    tls_path: {{ .TLSPath }}
     diam_lib_dir: /usr/lib
     # user: "{{ .User }}"
     core_file_url: "http://192.168.0.37/mirror/open5gs/github/bbdh-2.6.6.zip"
@@ -27,7 +28,7 @@ func TemplateYML() string {
     plmn:
       mcc: 432
       mnc: 080
-    diam_realm: {{ .Diam_Realm }}
+    diam_realm: {{ .DiamRealm }}
 
   children:
     # ============================================================
@@ -39,7 +40,7 @@ func TemplateYML() string {
         sgwc{{ add $i 1 }}_cluster:
           hosts:
             sgwc{{ add $i 1 }}:
-              ansible_host: {{ $c.Master.ANSIBLE_HOST }}
+              ansible_host: {{ $c.Master.ANSIBLEHost }}
               ansible_port: {{ $c.Master.ManagementPort }}
               ansible_user: "{{ $c.Master.User }}"
               ansible_password: "{{ $c.Master.Password }}"
@@ -48,7 +49,7 @@ func TemplateYML() string {
               keepalived_priority: {{ $c.Master.KeepalivedPrio }}
 
             sgwc{{ add $i 1 }}_backup:
-              ansible_host: {{ $c.Backup.ANSIBLE_HOST }}
+              ansible_host: {{ $c.Backup.ANSIBLEHost }}
               ansible_port: {{ $c.Backup.ManagementPort }}
               ansible_user: "{{ $c.Backup.User }}"
               ansible_password: "{{ $c.Backup.Password }}"
@@ -57,7 +58,7 @@ func TemplateYML() string {
               keepalived_priority: {{ $c.Backup.KeepalivedPrio }}
 
           vars:
-            logger: "{{ $.Var_path }}/{{ $.Non_diam_groupNames }}.log"
+            logger: "{{ $.VarPath }}/{{ $.NonDiamGroupNames }}.log"
             sgwc_id: {{ add $i 1 }}
             router_id: {{ add 90 $i }}
             max_ue: 30000
@@ -93,7 +94,7 @@ func TemplateYML() string {
         sgwu{{ add $i 1 }}_cluster:
           hosts:
             sgwu{{ add $i 1 }}:
-              ansible_host: {{ $c.Master.ANSIBLE_HOST }}
+              ansible_host: {{ $c.Master.ANSIBLEHost }}
               ansible_port: {{ $c.Master.ManagementPort }}
               ansible_user: "{{ $c.Master.User }}"
               ansible_password: "{{ $c.Master.Password }}"
@@ -102,7 +103,7 @@ func TemplateYML() string {
               keepalived_priority: {{ $c.Master.KeepalivedPrio }}
 
             sgwu{{ add $i 1 }}_backup:
-              ansible_host: {{ $c.Backup.ANSIBLE_HOST }}
+              ansible_host: {{ $c.Backup.ANSIBLEHost }}
               ansible_port: {{ $c.Backup.ManagementPort }}
               ansible_user: "{{ $c.Backup.User }}"
               ansible_password: "{{ $c.Backup.Password }}"
@@ -111,7 +112,7 @@ func TemplateYML() string {
               keepalived_priority: {{ $c.Backup.KeepalivedPrio }}
 
           vars:
-            logger: "{{ $.Var_path }}/{{ $.Non_diam_groupNames }}.log"
+            logger: "{{ $.VarPath }}/{{ $.NonDiamGroupNames }}.log"
             router_id: {{ add 100 $i }}
             max_ue: 30000
             max_peer: 30000
@@ -146,7 +147,7 @@ func TemplateYML() string {
             upf{{ add $i 1 }}_cluster:
               hosts:
                 upf{{ add $i 1 }}:
-                  ansible_host: {{ $c.Master.ANSIBLE_HOST }}
+                  ansible_host: {{ $c.Master.ANSIBLEHost }}
                   ansible_port: {{ $c.Master.ManagementPort }}
                   ansible_user: "{{ $c.Master.User }}"
                   ansible_password: "{{ $c.Master.Password }}"
@@ -155,7 +156,7 @@ func TemplateYML() string {
                   keepalived_priority: {{ $c.Master.KeepalivedPrio }}
 
                 upf{{ add $i 1 }}_backup:
-                  ansible_host: {{ $c.Backup.ANSIBLE_HOST }}
+                  ansible_host: {{ $c.Backup.ANSIBLEHost }}
                   ansible_port: {{ $c.Backup.ManagementPort }}
                   ansible_user: "{{ $c.Backup.User }}"
                   ansible_password: "{{ $c.Backup.Password }}"
@@ -164,8 +165,8 @@ func TemplateYML() string {
                   keepalived_priority: {{ $c.Backup.KeepalivedPrio }}
 
               vars:
-                logger: "{{ $.Var_path }}/{{ $.Diam_groupNames }}.log"
-                freeDiameter: "{{ $.Var_path_diameter }}{{ $.Diam_groupNames }}.conf"
+                logger: "{{ $.VarPath }}/{{ $.DiamGroupNames }}.log"
+                freeDiameter: "{{ $.VarPathDiameter }}{{ $.DiamGroupNames }}.conf"
                 router_id: {{ add 120 $i }}
                 max_ue: 30000
                 max_peer: 30000
@@ -205,7 +206,7 @@ func TemplateYML() string {
             mme{{ add $i 1 }}_cluster:
               hosts:
                 mme{{ add $i 1 }}:
-                  ansible_host: {{ $c.Master.ANSIBLE_HOST }}
+                  ansible_host: {{ $c.Master.ANSIBLEHost }}
                   ansible_port: {{ $c.Master.ManagementPort }}
                   ansible_user: "{{ $c.Master.User }}"
                   ansible_password: "{{ $c.Master.Password }}"
@@ -214,7 +215,7 @@ func TemplateYML() string {
                   keepalived_priority: {{ $c.Master.KeepalivedPrio }}
 
                 mme{{ add $i 1 }}_backup:
-                  ansible_host: {{ $c.Backup.ANSIBLE_HOST }}
+                  ansible_host: {{ $c.Backup.ANSIBLEHost }}
                   ansible_port: {{ $c.Backup.ManagementPort }}
                   ansible_user: "{{ $c.Backup.User }}"
                   ansible_password: "{{ $c.Backup.Password }}"
@@ -223,9 +224,9 @@ func TemplateYML() string {
                   keepalived_priority: {{ $c.Backup.KeepalivedPrio }}
 
               vars:
-                diam_host: "{{ $.Diam_groupNames }}.{{ $.Hardcoded_Diam_Realm }}"
-                logger: "{{ $.Var_path }}/{{ $.Diam_groupNames }}.log"
-                freeDiameter: "{{ $.Var_path_diameter }}{{ $.Diam_groupNames }}.conf"
+                diam_host: "{{ $.DiamGroupNames }}.{{ $.HardcodedDiamRealm }}"
+                logger: "{{ $.VarPath }}/{{ $.DiamGroupNames }}.log"
+                freeDiameter: "{{ $.VarPathDiameter }}{{ $.DiamGroupNames }}.conf"
                 router_id: {{ add $i 1 }}
                 max_ue: 30000
                 max_peer: 30000
@@ -298,7 +299,7 @@ func TemplateYML() string {
             hss{{ add $i 1 }}_cluster:
               hosts:
                 hss{{ add $i 1 }}:
-                  ansible_host: {{ $c.Master.ANSIBLE_HOST }}
+                  ansible_host: {{ $c.Master.ANSIBLEHost }}
                   ansible_port: {{ $c.Master.ManagementPort }}
                   ansible_user: "{{ $c.Master.User }}"
                   ansible_password: "{{ $c.Master.Password }}"
@@ -307,7 +308,7 @@ func TemplateYML() string {
                   keepalived_priority: {{ $c.Master.KeepalivedPrio }}
 
                 hss{{ add $i 1 }}_backup:
-                  ansible_host: {{ $c.Backup.ANSIBLE_HOST }}
+                  ansible_host: {{ $c.Backup.ANSIBLEHost }}
                   ansible_port: {{ $c.Backup.ManagementPort }}
                   ansible_user: "{{ $c.Backup.User }}"
                   ansible_password: "{{ $c.Backup.Password }}"
@@ -316,9 +317,9 @@ func TemplateYML() string {
                   keepalived_priority: {{ $c.Backup.KeepalivedPrio }}
 
               vars:
-                diam_host: "{{ $.Diam_groupNames }}.{{ $.Hardcoded_Diam_Realm }}"
-                logger: "{{ $.Var_path }}/{{ $.Diam_groupNames }}.log"
-                freeDiameter: "{{ $.Var_path_diameter }}{{ $.Diam_groupNames }}.conf"
+                diam_host: "{{ $.DiamGroupNames }}.{{ $.HardcodedDiamRealm }}"
+                logger: "{{ $.VarPath }}/{{ $.DiamGroupNames }}.log"
+                freeDiameter: "{{ $.VarPathDiameter }}{{ $.DiamGroupNames }}.conf"
                 router_id: {{ add 50 $i }}
                 hss_id: {{ add $i 1 }}
                 max_ue: 30000
@@ -344,7 +345,7 @@ func TemplateYML() string {
             smf{{ add $i 1 }}_cluster:
               hosts:
                 smf{{ add $i 1 }}:
-                  ansible_host: {{ $c.Master.ANSIBLE_HOST }}
+                  ansible_host: {{ $c.Master.ANSIBLEHost }}
                   ansible_port: {{ $c.Master.ManagementPort }}
                   ansible_user: "{{ $c.Master.User }}"
                   ansible_password: "{{ $c.Master.Password }}"
@@ -353,7 +354,7 @@ func TemplateYML() string {
                   keepalived_priority: {{ $c.Master.KeepalivedPrio }}
 
                 smf{{ add $i 1 }}_backup:
-                  ansible_host: {{ $c.Backup.ANSIBLE_HOST }}
+                  ansible_host: {{ $c.Backup.ANSIBLEHost }}
                   ansible_port: {{ $c.Backup.ManagementPort }}
                   ansible_user: "{{ $c.Backup.User }}"
                   ansible_password: "{{ $c.Backup.Password }}"
@@ -362,9 +363,9 @@ func TemplateYML() string {
                   keepalived_priority: {{ $c.Backup.KeepalivedPrio }}
 
               vars:
-                diam_host: "{{ $.Diam_groupNames }}.{{ $.Hardcoded_Diam_Realm }}"
-                logger: "{{ $.Var_path }}/{{ $.Diam_groupNames }}.log"
-                freeDiameter: "{{ $.Var_path_diameter }}{{ $.Diam_groupNames }}.conf"
+                diam_host: "{{ $.DiamGroupNames }}.{{ $.HardcodedDiamRealm }}"
+                logger: "{{ $.VarPath }}/{{ $.DiamGroupNames }}.log"
+                freeDiameter: "{{ $.VarPathDiameter }}{{ $.DiamGroupNames }}.conf"
                 smf_id: {{ add $i 1 }}
                 router_id: {{ add 70 $i }}
                 max_ue: 30000
@@ -426,7 +427,7 @@ func TemplateYML() string {
             pcrf{{ add $i 1 }}_cluster:
               hosts:
                 pcrf{{ add $i 1 }}:
-                  ansible_host: {{ $c.Master.ANSIBLE_HOST }}
+                  ansible_host: {{ $c.Master.ANSIBLEHost }}
                   ansible_port: {{ $c.Master.ManagementPort }}
                   ansible_user: "{{ $c.Master.User }}"
                   ansible_password: "{{ $c.Master.Password }}"
@@ -435,7 +436,7 @@ func TemplateYML() string {
                   keepalived_priority: {{ $c.Master.KeepalivedPrio }}
 
                 pcrf{{ add $i 1 }}_backup:
-                  ansible_host: {{ $c.Backup.ANSIBLE_HOST }}
+                  ansible_host: {{ $c.Backup.ANSIBLEHost }}
                   ansible_port: {{ $c.Backup.ManagementPort }}
                   ansible_user: "{{ $c.Backup.User }}"
                   ansible_password: "{{ $c.Backup.Password }}"
@@ -444,9 +445,9 @@ func TemplateYML() string {
                   keepalived_priority: {{ $c.Backup.KeepalivedPrio }}
 
               vars:
-                diam_host: "{{ $.Diam_groupNames }}.{{ $.Hardcoded_Diam_Realm }}"
-                logger: "{{ $.Var_path }}/{{ $.Diam_groupNames }}.log"
-                freeDiameter: "{{ $.Var_path_diameter }}{{ $.Diam_groupNames }}.conf"
+                diam_host: "{{ $.DiamGroupNames }}.{{ $.HardcodedDiamRealm }}"
+                logger: "{{ $.VarPath }}/{{ $.DiamGroupNames }}.log"
+                freeDiameter: "{{ $.VarPathDiameter }}{{ $.DiamGroupNames }}.conf"
                 router_id: {{ add 80 $i }}
                 pcrf_id: {{ add $i 1 }}
                 max_ue: 30000

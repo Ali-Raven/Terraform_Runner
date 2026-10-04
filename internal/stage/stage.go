@@ -10,8 +10,8 @@ import (
 
 	"github.com/TwiN/go-color"
 	"github.com/common-nighthawk/go-figure"
-	"github.com/terraform_runner/internal/nozaros"
-	"github.com/terraform_runner/internal/oranos"
+	"github.com/terraform_runner/internal/endpoints/nozaros"
+	"github.com/terraform_runner/internal/endpoints/oranos"
 )
 
 func Oranos(hostname, wdir string) {

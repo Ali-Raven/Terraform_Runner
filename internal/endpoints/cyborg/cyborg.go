@@ -22,7 +22,7 @@ func Cyborg(hostname, wdir string) {
 
 	time.Sleep(1 * time.Second)
 
-	fmt.Printf("\nOptions : \n\t\n\t1.Enter Configuration =>\t%sEnter Ansible Configuration%s %s(Developed in later versions)%s \n\t------------\t\n\t2.Launch Ansible Menu =>\t\t%sExecuting Ansbile on the VMs%s \n\t------------\n\t3.Exit", color.Yellow, color.Reset, color.Cyan, color.Reset, color.Yellow, color.Reset)
+	fmt.Printf("\nOptions : \n\t\n\t1.Enter Configuration =>\t%sEnter Ansible Configuration%s %s(Developed in later versions)%s \n\t------------\t\n\t2.Launch Ansible Menu =>\t%sExecuting Ansbile on the VMs%s \n\t------------\n\t3.Exit", color.Yellow, color.Reset, color.Cyan, color.Reset, color.Yellow, color.Reset)
 	fmt.Print()
 	usrChoice := helper.ReadRequired(reader, "\n\nchoose : ")
 
@@ -50,10 +50,6 @@ func Ansible_config(hostname, wdir string, reader *bufio.Reader) {
 }
 
 func Running_Ansible(hostname, wdir string, reader *bufio.Reader) {
-	// fmt.Println(color.Yellow + "Executing Ansible ...." + color.Reset)
-	// fmt.Print(color.Yellow + "\nStarting ...\n" + color.Reset)
-	// time.Sleep(1 * time.Second)
-
 	listOfOptions := []string{"Installing 4G Core Components", "Config 4G Core", "Config Firewall", "Config keepAlived", "Exit"}
 
 	fmt.Printf("\n%s%s listing Options ... %s%s", color.Bold, color.Yellow, color.Reset, color.Reset)
@@ -145,19 +141,3 @@ func ConfigKeepAlived(wdir, currentDir string) {
 	fmt.Println(color.Green + "Configuring keepalived is Successfully Completed." + color.Reset)
 	time.Sleep(1 * time.Second)
 }
-
-// // =============================================================================================== Helper functions ==============================================================================================
-// func CurrentDir() (ـ string, err error) {
-// 	defer func() {
-// 		if err != nil {
-// 			err = fmt.Errorf("Error getting Currnet Dir : %w", err)
-// 		}
-// 	}()
-// 	currentDir, err := os.Getwd()
-// 	if err != nil {
-// 		return " ", err
-// 	}
-// 	return currentDir, nil
-// }
-//
-// =============================================================================================== Helper functions (END) ==============================================================================================

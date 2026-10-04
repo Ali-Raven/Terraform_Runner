@@ -7,8 +7,8 @@ import (
 	"github.com/TwiN/go-color"
 	"github.com/common-nighthawk/go-figure"
 	"github.com/terraform_runner/helper"
-	"github.com/terraform_runner/internal/cyborg"
-	helm "github.com/terraform_runner/internal/helm"
+	"github.com/terraform_runner/internal/endpoints/cyborg"
+	helm "github.com/terraform_runner/internal/endpoints/helm"
 	s "github.com/terraform_runner/internal/stage"
 	"github.com/terraform_runner/web"
 )
@@ -22,7 +22,7 @@ func Run() {
 	if len(os.Args) < 2 {
 		figure.NewColorFigure("GoProvision", "", "cyan", true).Print()
 		fmt.Printf("\n\n%s%sProjects :\n%s%s\n", color.Bold, color.Cyan, color.Reset, color.Reset)
-		items = []string{"Nozaros", "Oranos", "Helm", "Cyborg", "Web UI", "Exit"}
+		items = []string{"nozaros", "nranos", "helm", "cyborg", "webui", "Exit"}
 		choice = helper.AskSelect(items)
 	} else {
 		choice = os.Args[1]
@@ -37,15 +37,15 @@ func Run() {
 	case "--Helm", "--helm", "Helm":
 		helm.Helm(hostname, "/esxi_installer")
 		return
-	case "--Nozaros", "--nozaros", "Nozaros":
+	case "--Nozaros", "--nozaros", "nozaros":
 		s.Nozaros(hostname, "/terraform/final_terraform")
 		return
-	case "--Oranos", "--oranos", "Oranos":
-		s.Oranos(hostname, "terraform/vlan_trraform")
+	case "--Oranos", "--oranos", "oranos":
+		s.Oranos(hostname, "/terraform/vlan_terraform")
 		return
-	case "--Cyborg", "--cyborg", "Cyborg":
+	case "--Cyborg", "--cyborg", "cyborg":
 		cyborg.Cyborg(hostname, "/ansible/ansible-core-deploy")
-	case "--Webui", "Web UI":
+	case "--Webui", "webui":
 		web.Webui(hostname)
 	case "Exit":
 		os.Exit(0)
